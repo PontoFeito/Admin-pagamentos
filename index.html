@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pagamentos · Controle de Ponto</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+:root{
+  --bg:#FFFFFF; --ink:#111111; --muted:#5C5C5C; --line:#CFCFCF;
+  --confirm-green:#2E6B3E; --stamp-red:#A13636;
+}
+*{box-sizing:border-box;}
+body{margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:24px 16px 60px;}
+.wrap{max-width:960px; margin:0 auto;}
+h1{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1px; font-size:24px; border-bottom:2px solid var(--ink); padding-bottom:14px;}
+.eyebrow{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:3px; color:var(--muted); text-transform:uppercase;}
+.card{border:1.5px solid var(--ink); border-radius:4px; padding:20px; margin-bottom:16px; background:#fff;}
+.field-row{margin-bottom:12px;}
+.field-row label{display:block; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;}
+input, select{width:100%; padding:10px; border:1.5px solid var(--ink); border-radius:3px; font-family:'Inter',sans-serif; font-size:14px;}
+.btn{border:2px solid var(--ink); background:var(--ink); color:#fff; border-radius:3px; padding:12px 16px; font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; font-size:14px;}
+.btn.outline{background:#fff; color:var(--ink);}
+.btn.small{padding:6px 10px; font-size:11px;}
+.error-text{color:var(--stamp-red); font-size:13px; margin-top:8px; min-height:16px;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th, td{border-bottom:1px solid var(--line); padding:8px 6px; text-align:left;}
+th{font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--muted);}
+.tag{display:inline-block; padding:2px 8px; border-radius:20px; font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; background:#eee;}
+.hidden{display:none !important;}
+.month-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+.month-nav button{border:1px solid var(--ink); background:#fff; border-radius:3px; padding:6px 14px; cursor:pointer; font-family:'Oswald',sans-serif;}
+.month-label{font-family:'Space Mono',monospace; font-size:15px; text-transform:capitalize;}
+.total-geral{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; margin-top:6px;}
+.modal-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50; align-items:center; justify-content:center; padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff; border-radius:6px; padding:22px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto;}
+.receipt-row{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px;}
+.receipt-row.total{font-weight:700; border-bottom:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Controle de Ponto</div>
+  <h1>Pagamentos dos funcionários</h1>
+
+  <!-- login -->
+  <div class="card" id="loginCard">
+    <p style="font-size:13px; color:var(--muted);">Acesso restrito ao administrador (mesma conta do painel do ADM).</p>
+    <div class="field-row">
+      <label for="loginEmail">E-mail</label>
+      <input type="email" id="loginEmail" autocomplete="username">
+    </div>
+    <div class="field-row">
+      <label for="loginSenha">Senha</label>
+      <input type="password" id="loginSenha" autocomplete="current-password">
+    </div>
+    <button class="btn" id="loginBtn">Entrar</button>
+    <div class="error-text" id="loginError"></div>
+  </div>
+
+  <!-- área logada -->
+  <div id="appArea" class="hidden">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong id="userEmailLabel"></strong>
+        <button class="btn outline small" id="logoutBtn">Sair</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="month-nav">
+        <button id="prevMonthBtn">‹</button>
+        <div class="month-label" id="monthLabel">—</div>
+        <button id="nextMonthBtn">›</button>
+      </div>
+      <div id="tableWrap">Carregando…</div>
+      <div class="total-geral" id="totalGeral"></div>
+    </div>
+  </div>
+</div>
+
+<!-- modal de detalhe -->
+<div class="modal-overlay" id="detalheOverlay">
+  <div class="modal">
+    <h3 id="detalheNome">—</h3>
+    <div id="detalheConteudo"></div>
+    <button class="btn outline" id="detalheFechar" style="margin-top:14px; width:100%;">Fechar</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script>
+// Mesmo projeto Firebase dos outros dois sites — mesmo banco de dados.
+const firebaseConfig = {
+  apiKey: "AIzaSyA_hyosRTkvlk8_Qj-V9k0-2fiy1b9MYVM",
+  authDomain: "controle-ponto-7a04d.firebaseapp.com",
+  projectId: "controle-ponto-7a04d",
+  storageBucket: "controle-ponto-7a04d.firebasestorage.app",
+  messagingSenderId: "458473922894",
+  appId: "1:458473922894:web:f72ee3fa6f017af660fe1f",
+  measurementId: "G-F7VQSSTHNN"
+};
+// App nomeado (não "[DEFAULT]") pra não compartilhar sessão de login com
+// os outros dois sites (mesmo domínio do GitHub Pages).
+const pagApp = firebase.initializeApp(firebaseConfig, 'PagamentosApp');
+const auth = pagApp.auth();
+const FIRESTORE_REST_BASE = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents`;
+
+const LIMITE_NORMAL_MIN = 6*60;
+let employeesData = [];
+let viewMonth = new Date().toISOString().slice(0,7);
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function on(id, ev, fn){ const el=document.getElementById(id); if(el) el.addEventListener(ev, fn); }
+async function authToken(){ return auth.currentUser ? await auth.currentUser.getIdToken() : null; }
+
+function firestoreFieldsToObj(fields){
+  if(!fields) return {};
+  const out = {};
+  for(const k in fields){
+    const v = fields[k];
+    if(v.stringValue !== undefined) out[k] = v.stringValue;
+    else if(v.integerValue !== undefined) out[k] = parseInt(v.integerValue,10);
+    else if(v.doubleValue !== undefined) out[k] = v.doubleValue;
+    else if(v.booleanValue !== undefined) out[k] = v.booleanValue;
+    else if(v.nullValue !== undefined) out[k] = null;
+    else if(v.mapValue !== undefined) out[k] = firestoreFieldsToObj(v.mapValue.fields||{});
+    else if(v.arrayValue !== undefined) out[k] = (v.arrayValue.values||[]).map(item=>{
+      if(item.stringValue !== undefined) return item.stringValue;
+      if(item.integerValue !== undefined) return parseInt(item.integerValue,10);
+      if(item.mapValue !== undefined) return firestoreFieldsToObj(item.mapValue.fields||{});
+      return null;
+    });
+    else out[k] = null;
+  }
+  return out;
+}
+
+async function getIndex(indexDocId){
+  const token = await authToken();
+  const res = await fetch(`${FIRESTORE_REST_BASE}/admin_index/${indexDocId}`, { headers:{ Authorization:`Bearer ${token}` } });
+  if(res.status === 404) return { ids: [] };
+  if(!res.ok) return null;
+  const data = await res.json();
+  return { ids: firestoreFieldsToObj(data.fields).ids || [] };
+}
+async function fetchRecords(uid){
+  const token = await authToken();
+  const res = await fetch(`${FIRESTORE_REST_BASE}/users/${uid}/appdata/ponto-records`, { headers:{ Authorization:`Bearer ${token}` } });
+  if(res.status === 404) return {};
+  if(!res.ok) return {};
+  const data = await res.json();
+  const raw = data.fields && data.fields.value && data.fields.value.stringValue;
+  try{ return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; }
+}
+
+// --- as mesmas contas do app do funcionário, só de leitura ---
+function timeToMinutes(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
+function formatMinutes(mins){ const h=Math.floor(mins/60); const mm=Math.round(mins%60); return `${h}h${pad(mm)}`; }
+function formatBRL(v){ return (v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
+function monthKeyOf(dateKey){ return dateKey.slice(0,7); }
+
+function calcDiaria(mins, employee){
+  const v = (employee && employee.diariaValores) || {};
+  const horas = mins/60;
+  let tier = null;
+  if(horas >= 8) tier = 8; else if(horas >= 6) tier = 6; else if(horas >= 4) tier = 4;
+  if(tier) return { tier, valor: Number(v[tier]||v[String(tier)]||0) };
+  const base = Number(v['4']||v[4]||0);
+  return { tier:null, valor: base ? (base/4)*horas : 0 };
+}
+function calcTotal(rec){
+  if(!rec) return null;
+  if(rec.falta) return {falta:true, mins:0, complete:true, extraMins:0};
+  if(rec.diarista){
+    const e = timeToMinutes(rec.entrada), s = timeToMinutes(rec.saida);
+    if(e===null || s===null) return null;
+    return { mins: Math.max(0, s-e), complete:true, extraMins:0, diarista:true };
+  }
+  const e = timeToMinutes(rec.entrada), as = timeToMinutes(rec.almocoSaida), av = timeToMinutes(rec.almocoVolta), s = timeToMinutes(rec.saida);
+  let mins = 0, complete = true;
+  if(e!==null && as!==null){ mins += (as-e); } else complete = false;
+  if(av!==null && s!==null){ mins += (s-av); } else complete = false;
+  if(mins<=0 && !complete) return null;
+  const extraMins = mins > LIMITE_NORMAL_MIN ? mins - LIMITE_NORMAL_MIN : 0;
+  return { mins, complete, extraMins };
+}
+function calcINSS(salarioBase){
+  const faixas = [
+    {ate: 1621.00, aliq: 0.075}, {ate: 2902.84, aliq: 0.09},
+    {ate: 4354.27, aliq: 0.12}, {ate: 8475.55, aliq: 0.14},
+  ];
+  const base = Math.min(salarioBase, 8475.55);
+  let total = 0, anterior = 0;
+  for(const f of faixas){
+    if(base > anterior){
+      const faixaValor = Math.min(base, f.ate) - anterior;
+      if(faixaValor > 0) total += faixaValor * f.aliq;
+      anterior = f.ate;
+    }else break;
+  }
+  return Math.round(total * 100) / 100;
+}
+function calcFGTS(salarioBase){ return Math.round(salarioBase * 0.08 * 100) / 100; }
+function calcDescontoVT(salarioBase, valorMesVT, percentual){
+  const limite = salarioBase * (percentual/100);
+  return Math.round(Math.min(limite, valorMesVT) * 100) / 100;
+}
+function diasTrabalhadosNoMes(records, mk){
+  return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].entrada && !records[k].falta).length;
+}
+function diasUteisNoMes(mk){
+  const [y,m] = mk.split('-').map(Number);
+  const diasNoMes = new Date(y, m, 0).getDate();
+  let count = 0;
+  for(let d=1; d<=diasNoMes; d++){
+    const dow = new Date(y, m-1, d).getDay();
+    if(dow>=1 && dow<=5) count++;
+  }
+  return count;
+}
+function faltasNoMes(records, mk){
+  return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].falta).length;
+}
+function getRemuneracao(employee){
+  return {
+    salario: employee.salario||0,
+    va: employee.valeAlimentacaoDia||0,
+    vc: employee.valeCombustivelDia||0,
+    isCLT: employee.tipoPagamento==='clt' || employee.tipoPagamento==='mensalista',
+    vtAtivo: !!employee.vtAtivo,
+    vtValorDia: employee.vtValorDia||0,
+    vtPercentual: employee.vtPercentual||0
+  };
+}
+function computeDiaristaBreakdown(records, mk, employee){
+  const dias = diasTrabalhadosNoMes(records, mk);
+  const faltas = faltasNoMes(records, mk);
+  let totalMes = 0;
+  Object.keys(records).filter(k=>monthKeyOf(k)===mk).forEach(k=>{
+    const t = calcTotal(records[k]);
+    if(t && !t.falta && t.complete) totalMes += calcDiaria(t.mins, employee).valor;
+  });
+  return { diarista:true, dias, faltas, totalMes };
+}
+function computePayrollBreakdown(records, mk, employee){
+  if(employee.tipoPagamento === 'diarista') return computeDiaristaBreakdown(records, mk, employee);
+  const rem = getRemuneracao(employee);
+  const diasUteis = diasUteisNoMes(mk);
+  const dias = diasTrabalhadosNoMes(records, mk);
+  const faltas = faltasNoMes(records, mk);
+  const diaValor = diasUteis ? rem.salario / diasUteis : 0;
+  let salarioMes = diaValor * dias;
+  if(dias >= diasUteis) salarioMes = rem.salario;
+  const vaMes = rem.va * dias;
+  const vcMes = rem.vc * dias;
+  const out = { diasUteis, dias, faltas, salarioMes, vaMes, vcMes, isCLT: rem.isCLT, diarista:false };
+  if(rem.isCLT){
+    out.inss = calcINSS(salarioMes);
+    out.fgts = calcFGTS(salarioMes);
+    if(rem.vtAtivo){
+      const vtMes = rem.vtValorDia * dias;
+      out.vtMes = vtMes;
+      out.descontoVT = calcDescontoVT(salarioMes, vtMes, rem.vtPercentual);
+    }else{ out.vtMes = 0; out.descontoVT = 0; }
+    out.salarioLiquido = salarioMes - out.inss - out.descontoVT;
+    out.totalMes = out.salarioLiquido + vaMes + vcMes;
+  }else{
+    out.totalMes = salarioMes + vaMes + vcMes;
+  }
+  return out;
+}
+function labelTipoPagamento(tipo){
+  if(tipo === 'diarista') return 'Diarista';
+  if(tipo === 'estagiario') return 'Estagiário';
+  return 'CLT';
+}
+function monthLabelOf(mk){
+  const [y,m] = mk.split('-');
+  const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  return `${meses[+m-1]} de ${y}`;
+}
+function shiftMonth(mk, delta){
+  let [y,m] = mk.split('-').map(Number);
+  m += delta; if(m<1){m=12;y-=1;} else if(m>12){m=1;y+=1;}
+  return `${y}-${pad(m)}`;
+}
+
+async function loadTudo(){
+  const wrap = document.getElementById('tableWrap');
+  document.getElementById('monthLabel').textContent = monthLabelOf(viewMonth);
+  wrap.innerHTML = 'Carregando…';
+  const idx = await getIndex('employees');
+  if(!idx){
+    wrap.innerHTML = '<p class="error-text">Sem permissão de administrador nesta conta.</p>';
+    return;
+  }
+  const token = await authToken();
+  const resultados = await Promise.all(idx.ids.map(async (uid)=>{
+    const res = await fetch(`${FIRESTORE_REST_BASE}/employees/${uid}`, { headers:{ Authorization:`Bearer ${token}` } });
+    if(!res.ok) return null;
+    const doc = await res.json();
+    const employee = { uid, ...firestoreFieldsToObj(doc.fields) };
+    const records = await fetchRecords(uid);
+    const breakdown = computePayrollBreakdown(records, viewMonth, employee);
+    return { employee, breakdown };
+  }));
+  employeesData = resultados.filter(Boolean);
+  renderTabela();
+}
+function renderTabela(){
+  const wrap = document.getElementById('tableWrap');
+  if(employeesData.length===0){ wrap.innerHTML = '<p>Nenhum funcionário encontrado.</p>'; document.getElementById('totalGeral').textContent=''; return; }
+  let totalGeral = 0;
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table><thead><tr>
+    <th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>Total a receber</th><th></th>
+  </tr></thead><tbody>
+  ${employeesData.map(({employee, breakdown})=>{
+    totalGeral += breakdown ? breakdown.totalMes : 0;
+    return `<tr>
+      <td>${employee.nome||'—'}</td>
+      <td><span class="tag">${labelTipoPagamento(employee.tipoPagamento)}</span></td>
+      <td>${breakdown?breakdown.dias:'—'}</td>
+      <td>${breakdown?breakdown.faltas:'—'}</td>
+      <td><strong>${breakdown?formatBRL(breakdown.totalMes):'—'}</strong></td>
+      <td><button class="btn small outline" data-uid="${employee.uid}">Detalhe</button></td>
+    </tr>`;
+  }).join('')}
+  </tbody></table></div>`;
+  document.getElementById('totalGeral').textContent = `Total da folha do mês: ${formatBRL(totalGeral)}`;
+  wrap.querySelectorAll('button[data-uid]').forEach(btn=>{
+    btn.addEventListener('click', ()=>abrirDetalhe(btn.getAttribute('data-uid')));
+  });
+}
+function abrirDetalhe(uid){
+  const item = employeesData.find(x=>x.employee.uid===uid);
+  if(!item) return;
+  const { employee, breakdown } = item;
+  document.getElementById('detalheNome').textContent = employee.nome || '—';
+  const c = document.getElementById('detalheConteudo');
+  if(!breakdown){ c.innerHTML = '<p>Sem dados neste mês.</p>'; document.getElementById('detalheOverlay').classList.add('show'); return; }
+  let linhas = '';
+  if(breakdown.diarista){
+    linhas = `
+      <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.dias}</span></div>
+      <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
+      <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
+    `;
+  }else{
+    linhas = `
+      <div class="receipt-row"><span>Dias úteis no mês</span><span>${breakdown.diasUteis}</span></div>
+      <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.dias}</span></div>
+      <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
+      <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa (proporcional)':'Salário bruto (proporcional)'}</span><span>${formatBRL(breakdown.salarioMes)}</span></div>
+      ${breakdown.isCLT ? `
+      <div class="receipt-row"><span>INSS (desconto)</span><span>-${formatBRL(breakdown.inss)}</span></div>
+      ${breakdown.descontoVT>0 ? `<div class="receipt-row"><span>Vale Transporte (desconto)</span><span>-${formatBRL(breakdown.descontoVT)}</span></div>` : ''}
+      <div class="receipt-row"><span>Salário líquido</span><span>${formatBRL(breakdown.salarioLiquido)}</span></div>
+      <div class="receipt-row"><span>FGTS (depositado à parte)</span><span>${formatBRL(breakdown.fgts)}</span></div>
+      ` : ''}
+      <div class="receipt-row"><span>Vale Alimentação</span><span>${formatBRL(breakdown.vaMes)}</span></div>
+      <div class="receipt-row"><span>Vale Combustível</span><span>${formatBRL(breakdown.vcMes)}</span></div>
+      <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
+    `;
+  }
+  c.innerHTML = linhas;
+  document.getElementById('detalheOverlay').classList.add('show');
+}
+
+async function onLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if(!email || !senha){ errEl.textContent = 'Preencha e-mail e senha.'; return; }
+  try{ await auth.signInWithEmailAndPassword(email, senha); }
+  catch(e){ errEl.textContent = 'E-mail ou senha incorretos.'; }
+}
+function onLogout(){ auth.signOut(); }
+
+auth.onAuthStateChanged(async (user)=>{
+  if(user){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('appArea').classList.remove('hidden');
+    document.getElementById('userEmailLabel').textContent = user.email;
+    await loadTudo();
+  }else{
+    document.getElementById('appArea').classList.add('hidden');
+    document.getElementById('loginCard').classList.remove('hidden');
+  }
+});
+
+on('loginBtn','click', onLogin);
+on('logoutBtn','click', onLogout);
+on('prevMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,-1); loadTudo(); });
+on('nextMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,1); loadTudo(); });
+on('detalheFechar','click', ()=>document.getElementById('detalheOverlay').classList.remove('show'));
+</script>
+</body>
+</html>
