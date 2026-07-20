@@ -231,12 +231,13 @@ function faltasNoMes(records, mk){
 function getRemuneracao(employee){
   return {
     salario: employee.salario||0,
-    va: employee.valeAlimentacaoDia||0,
-    vc: employee.valeCombustivelDia||0,
+    va: employee.va||0,
+    vaForma: employee.vaForma||'cartao',
     isCLT: employee.tipoPagamento==='clt' || employee.tipoPagamento==='mensalista',
     vtAtivo: !!employee.vtAtivo,
     vtValorDia: employee.vtValorDia||0,
-    vtPercentual: employee.vtPercentual||0
+    vtPercentual: employee.vtPercentual||0,
+    vtForma: employee.vtForma||'cartao'
   };
 }
 function computeDiaristaBreakdown(records, mk, employee){
@@ -259,22 +260,29 @@ function computePayrollBreakdown(records, mk, employee){
   let salarioMes = diaValor * dias;
   if(dias >= diasUteis) salarioMes = rem.salario;
   const vaMes = rem.va * dias;
-  const vcMes = rem.vc * dias;
-  const out = { diasUteis, dias, faltas, salarioMes, vaMes, vcMes, isCLT: rem.isCLT, diarista:false };
+  const out = { diasUteis, dias, faltas, salarioMes, vaMes, vaForma: rem.vaForma, isCLT: rem.isCLT, diarista:false };
+  // Vale Transporte pode descontar tanto de CLT quanto de estagiário —
+  // segue o mesmo cálculo do app do funcionário.
+  if(rem.vtAtivo){
+    const vtMes = rem.vtValorDia * dias;
+    out.vtMes = vtMes;
+    out.vtForma = rem.vtForma;
+    out.descontoVT = calcDescontoVT(salarioMes, vtMes, rem.vtPercentual);
+  }else{
+    out.vtMes = 0; out.descontoVT = 0;
+  }
   if(rem.isCLT){
     out.inss = calcINSS(salarioMes);
     out.fgts = calcFGTS(salarioMes);
-    if(rem.vtAtivo){
-      const vtMes = rem.vtValorDia * dias;
-      out.vtMes = vtMes;
-      out.descontoVT = calcDescontoVT(salarioMes, vtMes, rem.vtPercentual);
-    }else{ out.vtMes = 0; out.descontoVT = 0; }
     out.salarioLiquido = salarioMes - out.inss - out.descontoVT;
-    out.totalMes = out.salarioLiquido + vaMes + vcMes;
   }else{
-    out.totalMes = salarioMes + vaMes + vcMes;
+    out.salarioLiquido = salarioMes - out.descontoVT;
   }
+  out.totalMes = out.salarioLiquido + vaMes;
   return out;
+}
+function labelForma(forma){
+  return forma === 'dinheiro' ? '💵 Dinheiro' : '💳 Cartão benefício';
 }
 function labelTipoPagamento(tipo){
   if(tipo === 'diarista') return 'Diarista';
@@ -338,6 +346,12 @@ function renderTabela(){
     btn.addEventListener('click', ()=>abrirDetalhe(btn.getAttribute('data-uid')));
   });
 }
+function formaCheckboxes(forma){
+  const cartao = forma !== 'dinheiro';
+  return `<div style="font-size:12px; color:var(--muted); margin:-4px 0 8px;">
+    ${cartao?'☑':'☐'} Cartão benefício &nbsp; ${!cartao?'☑':'☐'} Dinheiro
+  </div>`;
+}
 function abrirDetalhe(uid){
   const item = employeesData.find(x=>x.employee.uid===uid);
   if(!item) return;
@@ -358,14 +372,12 @@ function abrirDetalhe(uid){
       <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.dias}</span></div>
       <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
       <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa (proporcional)':'Salário bruto (proporcional)'}</span><span>${formatBRL(breakdown.salarioMes)}</span></div>
-      ${breakdown.isCLT ? `
-      <div class="receipt-row"><span>INSS (desconto)</span><span>-${formatBRL(breakdown.inss)}</span></div>
-      ${breakdown.descontoVT>0 ? `<div class="receipt-row"><span>Vale Transporte (desconto)</span><span>-${formatBRL(breakdown.descontoVT)}</span></div>` : ''}
-      <div class="receipt-row"><span>Salário líquido</span><span>${formatBRL(breakdown.salarioLiquido)}</span></div>
-      <div class="receipt-row"><span>FGTS (depositado à parte)</span><span>${formatBRL(breakdown.fgts)}</span></div>
-      ` : ''}
+      ${breakdown.isCLT ? `<div class="receipt-row"><span>INSS (desconto)</span><span>-${formatBRL(breakdown.inss)}</span></div>` : ''}
+      ${breakdown.descontoVT>0 ? `<div class="receipt-row"><span>Vale Transporte (desconto)</span><span>-${formatBRL(breakdown.descontoVT)}</span></div>${formaCheckboxes(breakdown.vtForma)}` : ''}
+      <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa líquida':'Salário líquido'}</span><span>${formatBRL(breakdown.salarioLiquido)}</span></div>
+      ${breakdown.isCLT ? `<div class="receipt-row"><span>FGTS (depositado à parte)</span><span>${formatBRL(breakdown.fgts)}</span></div>` : ''}
       <div class="receipt-row"><span>Vale Alimentação</span><span>${formatBRL(breakdown.vaMes)}</span></div>
-      <div class="receipt-row"><span>Vale Combustível</span><span>${formatBRL(breakdown.vcMes)}</span></div>
+      ${formaCheckboxes(breakdown.vaForma)}
       <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
     `;
   }
