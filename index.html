@@ -54,14 +54,17 @@ tbody tr:hover{background:var(--accent-tint);}
 
 .only-print{display:none;}
 @media print{
-  .no-print{display:none !important;}
-  body{padding:0;}
-  .only-print.active{display:block !important;}
+  body *{ visibility:hidden; }
+  .only-print.active, .only-print.active *{ visibility:visible; }
+  .only-print.active{ display:block !important; position:absolute; left:0; top:0; width:100%; padding:20px; }
+  body{padding:0; background:#fff;}
   #folhaTabela{width:100%; border-collapse:collapse; font-size:12px;}
   #folhaTabela th, #folhaTabela td{border:1px solid #999; padding:6px 8px; text-align:left;}
-  #folhaTitulo{font-family:'Oswald',sans-serif; text-transform:uppercase; margin-bottom:4px;}
+  #folhaTitulo, #holeriteTitulo{font-family:'Oswald',sans-serif; text-transform:uppercase; margin-bottom:4px;}
   .folha-rodape{font-size:11px; color:#777; margin-top:16px;}
   #holeriteConteudoImpressao .receipt-row{font-size:13px;}
+  .assinatura-linha{margin-top:56px; border-top:1px solid #333; width:320px; padding-top:6px; font-size:12px;}
+  .assinatura-data{margin-top:26px; font-size:12px;}
 }
 </style>
 </head>
@@ -435,7 +438,15 @@ function imprimirHolerite(){
   if(!item) return;
   const { employee, breakdown } = item;
   document.getElementById('holeriteTitulo').textContent = `Holerite — ${employee.nome||'—'}`;
-  document.getElementById('holeriteConteudoImpressao').innerHTML = `<p>Referência: ${monthLabelOf(viewMonth)}</p>` + montarLinhasHolerite(employee, breakdown);
+  document.getElementById('holeriteConteudoImpressao').innerHTML = `
+    <p><strong>Funcionário:</strong> ${employee.nome||'—'}</p>
+    <p><strong>Identificação:</strong> ${employee.identifier||'—'}</p>
+    <p><strong>Referência:</strong> ${monthLabelOf(viewMonth)}</p>
+    <hr style="margin:12px 0; border:none; border-top:1px solid #ccc;">
+    ${montarLinhasHolerite(employee, breakdown)}
+    <div class="assinatura-linha">Assinatura do funcionário</div>
+    <div class="assinatura-data">Data: ____ / ____ / ________</div>
+  `;
   document.getElementById('holeriteData').textContent = new Date().toLocaleDateString('pt-BR');
   const el = document.getElementById('holeriteImpressao');
   el.classList.add('active');
@@ -449,7 +460,7 @@ function imprimirFolha(){
     if(!breakdown) return '';
     totalGeral += breakdown.totalMes;
     if(breakdown.diarista){
-      return `<tr><td>${employee.nome||'—'}</td><td>${labelTipoPagamento(employee.tipoPagamento)}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>—</td><td>—</td><td>—</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td></tr>`;
+      return `<tr><td>${employee.nome||'—'}</td><td>${labelTipoPagamento(employee.tipoPagamento)}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>—</td><td>—</td><td>—</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td><td style="min-width:120px;"></td></tr>`;
     }
     return `<tr>
       <td>${employee.nome||'—'}</td>
@@ -460,11 +471,12 @@ function imprimirFolha(){
       <td>${breakdown.isCLT ? formatBRL(breakdown.inss) : '—'}</td>
       <td>${formatBRL(breakdown.vaMes)}${breakdown.vtMes>0 ? ' + ' + formatBRL(breakdown.vtMes) + ' VT' : ''}</td>
       <td><strong>${formatBRL(breakdown.totalMes)}</strong></td>
+      <td style="min-width:120px;"></td>
     </tr>`;
   }).join('');
   document.getElementById('folhaTabela').innerHTML = `
     <thead><tr>
-      <th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>Bruto</th><th>INSS</th><th>VA/VT</th><th>Total</th>
+      <th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>Bruto</th><th>INSS</th><th>VA/VT</th><th>Total</th><th>Assinatura</th>
     </tr></thead>
     <tbody>${linhas}</tbody>
   `;
