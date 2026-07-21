@@ -262,12 +262,13 @@ function computePayrollBreakdown(records, mk, employee){
   const vaMes = rem.va * dias;
   const out = { diasUteis, dias, faltas, salarioMes, vaMes, vaForma: rem.vaForma, isCLT: rem.isCLT, diarista:false };
   // Vale Transporte pode descontar tanto de CLT quanto de estagiário —
-  // segue o mesmo cálculo do app do funcionário.
+  // segue o mesmo cálculo do app do funcionário. O desconto legal é
+  // opcional (0% = não desconta nada); o valor do vale aparece sempre.
+  out.vtForma = rem.vtForma;
   if(rem.vtAtivo){
     const vtMes = rem.vtValorDia * dias;
     out.vtMes = vtMes;
-    out.vtForma = rem.vtForma;
-    out.descontoVT = calcDescontoVT(salarioMes, vtMes, rem.vtPercentual);
+    out.descontoVT = rem.vtPercentual>0 ? calcDescontoVT(salarioMes, vtMes, rem.vtPercentual) : 0;
   }else{
     out.vtMes = 0; out.descontoVT = 0;
   }
@@ -278,7 +279,7 @@ function computePayrollBreakdown(records, mk, employee){
   }else{
     out.salarioLiquido = salarioMes - out.descontoVT;
   }
-  out.totalMes = out.salarioLiquido + vaMes;
+  out.totalMes = out.salarioLiquido + vaMes + (rem.vtAtivo && rem.vtForma==='dinheiro' ? out.vtMes : 0);
   return out;
 }
 function labelForma(forma){
@@ -373,7 +374,8 @@ function abrirDetalhe(uid){
       <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
       <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa (proporcional)':'Salário bruto (proporcional)'}</span><span>${formatBRL(breakdown.salarioMes)}</span></div>
       ${breakdown.isCLT ? `<div class="receipt-row"><span>INSS (desconto)</span><span>-${formatBRL(breakdown.inss)}</span></div>` : ''}
-      ${breakdown.descontoVT>0 ? `<div class="receipt-row"><span>Vale Transporte (desconto)</span><span>-${formatBRL(breakdown.descontoVT)}</span></div>${formaCheckboxes(breakdown.vtForma)}` : ''}
+      ${breakdown.vtMes>0 ? `<div class="receipt-row"><span>Vale Transporte</span><span>${formatBRL(breakdown.vtMes)}</span></div>${formaCheckboxes(breakdown.vtForma)}` : ''}
+      ${breakdown.descontoVT>0 ? `<div class="receipt-row"><span>Desconto legal do Vale Transporte</span><span>-${formatBRL(breakdown.descontoVT)}</span></div>` : ''}
       <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa líquida':'Salário líquido'}</span><span>${formatBRL(breakdown.salarioLiquido)}</span></div>
       ${breakdown.isCLT ? `<div class="receipt-row"><span>FGTS (depositado à parte)</span><span>${formatBRL(breakdown.fgts)}</span></div>` : ''}
       <div class="receipt-row"><span>Vale Alimentação</span><span>${formatBRL(breakdown.vaMes)}</span></div>
