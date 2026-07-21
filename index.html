@@ -11,36 +11,58 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap');
 :root{
-  --bg:#FFFFFF; --ink:#111111; --muted:#5C5C5C; --line:#CFCFCF;
-  --confirm-green:#2E6B3E; --stamp-red:#A13636;
+  --bg:#F5F6F4; --ink:#16191C; --muted:#6B7178; --line:#E3E4E0;
+  --confirm-green:#2E7D5B; --stamp-red:#B4423F;
+  --accent:#155A4C; --accent-dark:#0E4438; --accent-tint:#E7F2EE;
+  --shadow-sm:0 1px 2px rgba(20,25,22,.06), 0 1px 1px rgba(20,25,22,.04);
+  --shadow-md:0 6px 20px rgba(20,25,22,.07), 0 2px 6px rgba(20,25,22,.05);
+  --radius:14px; --radius-sm:9px;
 }
 *{box-sizing:border-box;}
 body{margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:24px 16px 60px;}
 .wrap{max-width:960px; margin:0 auto;}
-h1{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1px; font-size:24px; border-bottom:2px solid var(--ink); padding-bottom:14px;}
+h1{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.5px; font-size:24px; margin-bottom:16px; padding-bottom:16px; border-bottom:3px solid var(--accent);}
 .eyebrow{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:3px; color:var(--muted); text-transform:uppercase;}
-.card{border:1.5px solid var(--ink); border-radius:4px; padding:20px; margin-bottom:16px; background:#fff;}
-.field-row{margin-bottom:12px;}
-.field-row label{display:block; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;}
-input, select{width:100%; padding:10px; border:1.5px solid var(--ink); border-radius:3px; font-family:'Inter',sans-serif; font-size:14px;}
-.btn{border:2px solid var(--ink); background:var(--ink); color:#fff; border-radius:3px; padding:12px 16px; font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; font-size:14px;}
-.btn.outline{background:#fff; color:var(--ink);}
-.btn.small{padding:6px 10px; font-size:11px;}
+.card{border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:18px; background:#fff; box-shadow:var(--shadow-sm);}
+.field-row{margin-bottom:14px;}
+.field-row label{display:block; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
+input, select{width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:var(--radius-sm); font-family:'Inter',sans-serif; font-size:14px; transition:border-color .15s, box-shadow .15s;}
+input:focus, select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint);}
+.btn{border:none; background:var(--accent); color:#fff; border-radius:var(--radius-sm); padding:12px 18px; font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; font-size:14px; box-shadow:var(--shadow-sm); transition:background .15s, transform .1s, box-shadow .15s;}
+.btn:hover{background:var(--accent-dark); transform:translateY(-1px); box-shadow:var(--shadow-md);}
+.btn.outline{background:transparent; color:var(--accent); border:1.5px solid var(--accent); box-shadow:none;}
+.btn.outline:hover{background:var(--accent-tint); box-shadow:none; transform:none;}
+.btn.small{padding:7px 12px; font-size:11px; border-radius:7px;}
 .error-text{color:var(--stamp-red); font-size:13px; margin-top:8px; min-height:16px;}
 table{width:100%; border-collapse:collapse; font-size:13px;}
-th, td{border-bottom:1px solid var(--line); padding:8px 6px; text-align:left;}
+th, td{border-bottom:1px solid var(--line); padding:10px 8px; text-align:left;}
 th{font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--muted);}
-.tag{display:inline-block; padding:2px 8px; border-radius:20px; font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; background:#eee;}
+tbody tr{transition:background .12s;}
+tbody tr:hover{background:var(--accent-tint);}
+.tag{display:inline-block; padding:3px 10px; border-radius:20px; font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; background:var(--accent-tint); color:var(--accent-dark);}
 .hidden{display:none !important;}
 .month-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
-.month-nav button{border:1px solid var(--ink); background:#fff; border-radius:3px; padding:6px 14px; cursor:pointer; font-family:'Oswald',sans-serif;}
+.month-nav button{border:1.5px solid var(--line); background:#fff; border-radius:var(--radius-sm); padding:6px 16px; cursor:pointer; font-family:'Oswald',sans-serif; transition:background .12s, border-color .12s;}
+.month-nav button:hover{background:var(--accent-tint); border-color:var(--accent);}
 .month-label{font-family:'Space Mono',monospace; font-size:15px; text-transform:capitalize;}
-.total-geral{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; margin-top:6px;}
-.modal-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50; align-items:center; justify-content:center; padding:16px;}
+.total-geral{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; margin-top:6px; color:var(--accent-dark);}
+.modal-overlay{display:none; position:fixed; inset:0; background:rgba(15,20,18,.55); z-index:50; align-items:center; justify-content:center; padding:16px;}
 .modal-overlay.show{display:flex;}
-.modal{background:#fff; border-radius:6px; padding:22px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto;}
+.modal{background:#fff; border-radius:18px; padding:24px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-md);}
 .receipt-row{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px;}
 .receipt-row.total{font-weight:700; border-bottom:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:10px;}
+
+.only-print{display:none;}
+@media print{
+  .no-print{display:none !important;}
+  body{padding:0;}
+  .only-print.active{display:block !important;}
+  #folhaTabela{width:100%; border-collapse:collapse; font-size:12px;}
+  #folhaTabela th, #folhaTabela td{border:1px solid #999; padding:6px 8px; text-align:left;}
+  #folhaTitulo{font-family:'Oswald',sans-serif; text-transform:uppercase; margin-bottom:4px;}
+  .folha-rodape{font-size:11px; color:#777; margin-top:16px;}
+  #holeriteConteudoImpressao .receipt-row{font-size:13px;}
+}
 </style>
 </head>
 <body>
@@ -65,14 +87,14 @@ th{font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercas
 
   <!-- área logada -->
   <div id="appArea" class="hidden">
-    <div class="card">
+    <div class="card no-print">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <strong id="userEmailLabel"></strong>
         <button class="btn outline small" id="logoutBtn">Sair</button>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card no-print">
       <div class="month-nav">
         <button id="prevMonthBtn">‹</button>
         <div class="month-label" id="monthLabel">—</div>
@@ -80,8 +102,24 @@ th{font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercas
       </div>
       <div id="tableWrap">Carregando…</div>
       <div class="total-geral" id="totalGeral"></div>
+      <button class="btn outline" id="imprimirBtn" style="margin-top:16px; width:100%;">🖨️ Imprimir folha do mês</button>
     </div>
   </div>
+</div>
+
+<!-- folha de pagamento pra impressão — fica escondida na tela, só aparece no print -->
+<div id="folhaImpressao" class="only-print">
+  <h2 id="folhaTitulo">Folha de Pagamento</h2>
+  <table id="folhaTabela"></table>
+  <p id="folhaTotalGeral"></p>
+  <p class="folha-rodape">Gerado em <span id="folhaData"></span> — Controle de Ponto</p>
+</div>
+
+<!-- holerite individual pra impressão -->
+<div id="holeriteImpressao" class="only-print">
+  <h2 id="holeriteTitulo">Holerite</h2>
+  <div id="holeriteConteudoImpressao"></div>
+  <p class="folha-rodape">Gerado em <span id="holeriteData"></span> — Controle de Ponto</p>
 </div>
 
 <!-- modal de detalhe -->
@@ -89,7 +127,10 @@ th{font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercas
   <div class="modal">
     <h3 id="detalheNome">—</h3>
     <div id="detalheConteudo"></div>
-    <button class="btn outline" id="detalheFechar" style="margin-top:14px; width:100%;">Fechar</button>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn outline" id="detalheFechar" style="flex:1;">Fechar</button>
+      <button class="btn" id="detalheImprimir" style="flex:1;">🖨️ Imprimir</button>
+    </div>
   </div>
 </div>
 
@@ -353,38 +394,86 @@ function formaCheckboxes(forma){
     ${cartao?'☑':'☐'} Cartão benefício &nbsp; ${!cartao?'☑':'☐'} Dinheiro
   </div>`;
 }
-function abrirDetalhe(uid){
-  const item = employeesData.find(x=>x.employee.uid===uid);
-  if(!item) return;
-  const { employee, breakdown } = item;
-  document.getElementById('detalheNome').textContent = employee.nome || '—';
-  const c = document.getElementById('detalheConteudo');
-  if(!breakdown){ c.innerHTML = '<p>Sem dados neste mês.</p>'; document.getElementById('detalheOverlay').classList.add('show'); return; }
-  let linhas = '';
+let currentDetalheUid = null;
+function montarLinhasHolerite(employee, breakdown){
+  if(!breakdown) return '<p>Sem dados neste mês.</p>';
   if(breakdown.diarista){
-    linhas = `
+    return `
       <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.dias}</span></div>
       <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
-      <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
-    `;
-  }else{
-    linhas = `
-      <div class="receipt-row"><span>Dias úteis no mês</span><span>${breakdown.diasUteis}</span></div>
-      <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.dias}</span></div>
-      <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
-      <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa (proporcional)':'Salário bruto (proporcional)'}</span><span>${formatBRL(breakdown.salarioMes)}</span></div>
-      ${breakdown.isCLT ? `<div class="receipt-row"><span>INSS (desconto)</span><span>-${formatBRL(breakdown.inss)}</span></div>` : ''}
-      ${breakdown.vtMes>0 ? `<div class="receipt-row"><span>Vale Transporte</span><span>${formatBRL(breakdown.vtMes)}</span></div>${formaCheckboxes(breakdown.vtForma)}` : ''}
-      ${breakdown.descontoVT>0 ? `<div class="receipt-row"><span>Desconto legal do Vale Transporte</span><span>-${formatBRL(breakdown.descontoVT)}</span></div>` : ''}
-      <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa líquida':'Salário líquido'}</span><span>${formatBRL(breakdown.salarioLiquido)}</span></div>
-      ${breakdown.isCLT ? `<div class="receipt-row"><span>FGTS (depositado à parte)</span><span>${formatBRL(breakdown.fgts)}</span></div>` : ''}
-      <div class="receipt-row"><span>Vale Alimentação</span><span>${formatBRL(breakdown.vaMes)}</span></div>
-      ${formaCheckboxes(breakdown.vaForma)}
       <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
     `;
   }
-  c.innerHTML = linhas;
+  return `
+    <div class="receipt-row"><span>Dias úteis no mês</span><span>${breakdown.diasUteis}</span></div>
+    <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.dias}</span></div>
+    <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
+    <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa (proporcional)':'Salário bruto (proporcional)'}</span><span>${formatBRL(breakdown.salarioMes)}</span></div>
+    ${breakdown.isCLT ? `<div class="receipt-row"><span>INSS (desconto)</span><span>-${formatBRL(breakdown.inss)}</span></div>` : ''}
+    ${breakdown.vtMes>0 ? `<div class="receipt-row"><span>Vale Transporte</span><span>${formatBRL(breakdown.vtMes)}</span></div>${formaCheckboxes(breakdown.vtForma)}` : ''}
+    ${breakdown.descontoVT>0 ? `<div class="receipt-row"><span>Desconto legal do Vale Transporte</span><span>-${formatBRL(breakdown.descontoVT)}</span></div>` : ''}
+    <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa líquida':'Salário líquido'}</span><span>${formatBRL(breakdown.salarioLiquido)}</span></div>
+    ${breakdown.isCLT ? `<div class="receipt-row"><span>FGTS (depositado à parte)</span><span>${formatBRL(breakdown.fgts)}</span></div>` : ''}
+    <div class="receipt-row"><span>Vale Alimentação</span><span>${formatBRL(breakdown.vaMes)}</span></div>
+    ${formaCheckboxes(breakdown.vaForma)}
+    <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
+  `;
+}
+function abrirDetalhe(uid){
+  const item = employeesData.find(x=>x.employee.uid===uid);
+  if(!item) return;
+  currentDetalheUid = uid;
+  const { employee, breakdown } = item;
+  document.getElementById('detalheNome').textContent = employee.nome || '—';
+  document.getElementById('detalheConteudo').innerHTML = montarLinhasHolerite(employee, breakdown);
   document.getElementById('detalheOverlay').classList.add('show');
+}
+
+// --- impressão: holerite individual e folha do mês inteira ---
+function imprimirHolerite(){
+  const item = employeesData.find(x=>x.employee.uid===currentDetalheUid);
+  if(!item) return;
+  const { employee, breakdown } = item;
+  document.getElementById('holeriteTitulo').textContent = `Holerite — ${employee.nome||'—'}`;
+  document.getElementById('holeriteConteudoImpressao').innerHTML = `<p>Referência: ${monthLabelOf(viewMonth)}</p>` + montarLinhasHolerite(employee, breakdown);
+  document.getElementById('holeriteData').textContent = new Date().toLocaleDateString('pt-BR');
+  const el = document.getElementById('holeriteImpressao');
+  el.classList.add('active');
+  window.print();
+  setTimeout(()=>el.classList.remove('active'), 500);
+}
+function imprimirFolha(){
+  document.getElementById('folhaTitulo').textContent = `Folha de Pagamento — Referência: ${monthLabelOf(viewMonth)}`;
+  let totalGeral = 0;
+  const linhas = employeesData.map(({employee, breakdown})=>{
+    if(!breakdown) return '';
+    totalGeral += breakdown.totalMes;
+    if(breakdown.diarista){
+      return `<tr><td>${employee.nome||'—'}</td><td>${labelTipoPagamento(employee.tipoPagamento)}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>—</td><td>—</td><td>—</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td></tr>`;
+    }
+    return `<tr>
+      <td>${employee.nome||'—'}</td>
+      <td>${labelTipoPagamento(employee.tipoPagamento)}</td>
+      <td>${breakdown.dias}/${breakdown.diasUteis}</td>
+      <td>${breakdown.faltas}</td>
+      <td>${formatBRL(breakdown.salarioMes)}</td>
+      <td>${breakdown.isCLT ? formatBRL(breakdown.inss) : '—'}</td>
+      <td>${formatBRL(breakdown.vaMes)}${breakdown.vtMes>0 ? ' + ' + formatBRL(breakdown.vtMes) + ' VT' : ''}</td>
+      <td><strong>${formatBRL(breakdown.totalMes)}</strong></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('folhaTabela').innerHTML = `
+    <thead><tr>
+      <th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>Bruto</th><th>INSS</th><th>VA/VT</th><th>Total</th>
+    </tr></thead>
+    <tbody>${linhas}</tbody>
+  `;
+  document.getElementById('folhaTotalGeral').innerHTML = `<strong>Total geral da folha: ${formatBRL(totalGeral)}</strong>`;
+  document.getElementById('folhaData').textContent = new Date().toLocaleDateString('pt-BR');
+  const el = document.getElementById('folhaImpressao');
+  el.classList.add('active');
+  window.print();
+  setTimeout(()=>el.classList.remove('active'), 500);
 }
 
 async function onLogin(){
@@ -411,6 +500,8 @@ auth.onAuthStateChanged(async (user)=>{
 });
 
 on('loginBtn','click', onLogin);
+on('imprimirBtn','click', imprimirFolha);
+on('detalheImprimir','click', imprimirHolerite);
 on('logoutBtn','click', onLogout);
 on('prevMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,-1); loadTudo(); });
 on('nextMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,1); loadTudo(); });
