@@ -105,7 +105,10 @@ tbody tr:hover{background:var(--accent-tint);}
       </div>
       <div id="tableWrap">Carregando…</div>
       <div class="total-geral" id="totalGeral"></div>
-      <button class="btn outline" id="imprimirBtn" style="margin-top:16px; width:100%;">🖨️ Imprimir folha do mês</button>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <button class="btn outline" id="refreshBtn" style="flex:1;">🔄 Atualizar dados</button>
+        <button class="btn outline" id="imprimirBtn" style="flex:1;">🖨️ Imprimir folha</button>
+      </div>
     </div>
   </div>
 </div>
@@ -163,6 +166,12 @@ let viewMonth = new Date().toISOString().slice(0,7);
 function pad(n){ return String(n).padStart(2,'0'); }
 function on(id, ev, fn){ const el=document.getElementById(id); if(el) el.addEventListener(ev, fn); }
 async function authToken(){ return auth.currentUser ? await auth.currentUser.getIdToken() : null; }
+// Escapa texto vindo de qualquer lugar (nome, identificação) antes de
+// colocar na tela via innerHTML — sem isso, um nome de funcionário
+// malicioso poderia rodar código na tela de quem está vendo o pagamento.
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 function firestoreFieldsToObj(fields){
   if(!fields) return {};
@@ -188,7 +197,10 @@ function firestoreFieldsToObj(fields){
 
 async function getIndex(indexDocId){
   const token = await authToken();
-  const res = await fetch(`${FIRESTORE_REST_BASE}/admin_index/${indexDocId}`, { headers:{ Authorization:`Bearer ${token}` } });
+  const {v:res, timedOut} = await withTimeout(
+    fetch(`${FIRESTORE_REST_BASE}/admin_index/${indexDocId}`, { headers:{ Authorization:`Bearer ${token}` } }), 12000
+  );
+  if(timedOut || !res) return null;
   if(res.status === 404) return { ids: [] };
   if(!res.ok) return null;
   const data = await res.json();
@@ -196,9 +208,10 @@ async function getIndex(indexDocId){
 }
 async function fetchRecords(uid){
   const token = await authToken();
-  const res = await fetch(`${FIRESTORE_REST_BASE}/users/${uid}/appdata/ponto-records`, { headers:{ Authorization:`Bearer ${token}` } });
-  if(res.status === 404) return {};
-  if(!res.ok) return {};
+  const {v:res, timedOut} = await withTimeout(
+    fetch(`${FIRESTORE_REST_BASE}/users/${uid}/appdata/ponto-records`, { headers:{ Authorization:`Bearer ${token}` } }), 12000
+  );
+  if(timedOut || !res || res.status === 404 || !res.ok) return {};
   const data = await res.json();
   const raw = data.fields && data.fields.value && data.fields.value.stringValue;
   try{ return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; }
@@ -345,7 +358,21 @@ function shiftMonth(mk, delta){
   return `${y}-${pad(m)}`;
 }
 
-async function loadTudo(){
+// Se o Firestore não responder em 12s, desiste e avisa em vez de deixar
+// a tela "Carregando..." pra sempre.
+function withTimeout(promise, ms){
+  return Promise.race([
+    promise.then(v=>({v, timedOut:false})),
+    new Promise(resolve=>setTimeout(()=>resolve({v:null, timedOut:true}), ms))
+  ]);
+}
+// Cache em memória: funcionário e pontos batidos não mudam a cada clique
+// de "mês anterior/seguinte" — guarda o que já foi buscado nesta sessão
+// pra recalcular na hora ao trocar de mês, sem nova ida ao servidor.
+const employeeCache = new Map();
+const recordsCache = new Map();
+
+async function loadTudo(forceRefresh){
   const wrap = document.getElementById('tableWrap');
   document.getElementById('monthLabel').textContent = monthLabelOf(viewMonth);
   wrap.innerHTML = 'Carregando…';
@@ -356,11 +383,21 @@ async function loadTudo(){
   }
   const token = await authToken();
   const resultados = await Promise.all(idx.ids.map(async (uid)=>{
-    const res = await fetch(`${FIRESTORE_REST_BASE}/employees/${uid}`, { headers:{ Authorization:`Bearer ${token}` } });
-    if(!res.ok) return null;
-    const doc = await res.json();
-    const employee = { uid, ...firestoreFieldsToObj(doc.fields) };
-    const records = await fetchRecords(uid);
+    let employee = !forceRefresh && employeeCache.get(uid);
+    if(!employee){
+      const {v:res, timedOut} = await withTimeout(
+        fetch(`${FIRESTORE_REST_BASE}/employees/${uid}`, { headers:{ Authorization:`Bearer ${token}` } }), 12000
+      );
+      if(timedOut || !res || !res.ok) return null;
+      const doc = await res.json();
+      employee = { uid, ...firestoreFieldsToObj(doc.fields) };
+      employeeCache.set(uid, employee);
+    }
+    let records = !forceRefresh && recordsCache.get(uid);
+    if(!records){
+      records = await fetchRecords(uid);
+      recordsCache.set(uid, records);
+    }
     const breakdown = computePayrollBreakdown(records, viewMonth, employee);
     return { employee, breakdown };
   }));
@@ -377,12 +414,12 @@ function renderTabela(){
   ${employeesData.map(({employee, breakdown})=>{
     totalGeral += breakdown ? breakdown.totalMes : 0;
     return `<tr>
-      <td>${employee.nome||'—'}</td>
+      <td>${esc(employee.nome||'—')}</td>
       <td><span class="tag">${labelTipoPagamento(employee.tipoPagamento)}</span></td>
       <td>${breakdown?breakdown.dias:'—'}</td>
       <td>${breakdown?breakdown.faltas:'—'}</td>
       <td><strong>${breakdown?formatBRL(breakdown.totalMes):'—'}</strong></td>
-      <td><button class="btn small outline" data-uid="${employee.uid}">Detalhe</button></td>
+      <td><button class="btn small outline" data-uid="${esc(employee.uid)}">Detalhe</button></td>
     </tr>`;
   }).join('')}
   </tbody></table></div>`;
@@ -439,8 +476,8 @@ function imprimirHolerite(){
   const { employee, breakdown } = item;
   document.getElementById('holeriteTitulo').textContent = `Holerite — ${employee.nome||'—'}`;
   document.getElementById('holeriteConteudoImpressao').innerHTML = `
-    <p><strong>Funcionário:</strong> ${employee.nome||'—'}</p>
-    <p><strong>Identificação:</strong> ${employee.identifier||'—'}</p>
+    <p><strong>Funcionário:</strong> ${esc(employee.nome||'—')}</p>
+    <p><strong>Identificação:</strong> ${esc(employee.identifier||'—')}</p>
     <p><strong>Referência:</strong> ${monthLabelOf(viewMonth)}</p>
     <hr style="margin:12px 0; border:none; border-top:1px solid #ccc;">
     ${montarLinhasHolerite(employee, breakdown)}
@@ -460,10 +497,10 @@ function imprimirFolha(){
     if(!breakdown) return '';
     totalGeral += breakdown.totalMes;
     if(breakdown.diarista){
-      return `<tr><td>${employee.nome||'—'}</td><td>${labelTipoPagamento(employee.tipoPagamento)}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>—</td><td>—</td><td>—</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td><td style="min-width:120px;"></td></tr>`;
+      return `<tr><td>${esc(employee.nome||'—')}</td><td>${labelTipoPagamento(employee.tipoPagamento)}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>—</td><td>—</td><td>—</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td><td style="min-width:120px;"></td></tr>`;
     }
     return `<tr>
-      <td>${employee.nome||'—'}</td>
+      <td>${esc(employee.nome||'—')}</td>
       <td>${labelTipoPagamento(employee.tipoPagamento)}</td>
       <td>${breakdown.dias}/${breakdown.diasUteis}</td>
       <td>${breakdown.faltas}</td>
@@ -513,6 +550,7 @@ auth.onAuthStateChanged(async (user)=>{
 
 on('loginBtn','click', onLogin);
 on('imprimirBtn','click', imprimirFolha);
+on('refreshBtn','click', ()=>loadTudo(true));
 on('detalheImprimir','click', imprimirHolerite);
 on('logoutBtn','click', onLogout);
 on('prevMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,-1); loadTudo(); });
