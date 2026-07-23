@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ponto Digital · Painel ADM</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+:root{
+  --bg:#F5F6F4; --paper:#FFFFFF; --paper-dark:#F2F2F2; --ink:#16191C;
+  --muted:#6B7178; --line:#E3E4E0; --confirm-green:#2E7D5B; --stamp-red:#B4423F;
+  --accent:#155A4C; --accent-dark:#0E4438; --accent-tint:#E7F2EE;
+  --shadow-sm:0 1px 2px rgba(20,25,22,.06), 0 1px 1px rgba(20,25,22,.04);
+  --shadow-md:0 6px 20px rgba(20,25,22,.07), 0 2px 6px rgba(20,25,22,.05);
+  --radius:14px; --radius-sm:9px;
+}
+*{box-sizing:border-box;}
+body{margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:24px 16px 60px;}
+.wrap{max-width:960px; margin:0 auto;}
+h1{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.5px; font-size:26px; margin-bottom:16px; padding-bottom:16px; border-bottom:3px solid var(--accent); border-radius:0 0 2px 2px;}
+.eyebrow{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:3px; color:var(--muted); text-transform:uppercase;}
+.card{border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:18px; background:var(--paper); box-shadow:var(--shadow-sm);}
+.field-row{margin-bottom:14px;}
+.field-row label{display:block; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
+input, select{width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:var(--radius-sm); font-family:'Inter',sans-serif; font-size:14px; background:var(--paper); color:var(--ink); transition:border-color .15s, box-shadow .15s;}
+input:focus, select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint);}
+.btn{border:none; background:var(--accent); color:#fff; border-radius:var(--radius-sm); padding:12px 18px; font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; font-size:14px; box-shadow:var(--shadow-sm); transition:background .15s, transform .1s, box-shadow .15s;}
+.btn:hover{background:var(--accent-dark); transform:translateY(-1px); box-shadow:var(--shadow-md);}
+.btn:active{transform:translateY(0);}
+.btn.outline{background:transparent; color:var(--accent); border:1.5px solid var(--accent); box-shadow:none;}
+.btn.outline:hover{background:var(--accent-tint); box-shadow:none;}
+.btn.danger{background:var(--stamp-red);}
+.btn.danger:hover{background:#8f302d;}
+.btn.small{padding:7px 12px; font-size:11px; border-radius:7px;}
+.error-text{color:var(--stamp-red); font-size:13px; margin-top:8px; min-height:16px;}
+.link-btn{background:none; border:none; color:var(--accent); text-decoration:none; cursor:pointer; font-size:13px; padding:0;}
+.link-btn:hover{text-decoration:underline;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th, td{border-bottom:1px solid var(--line); padding:10px 8px; text-align:left;}
+th{font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--muted); letter-spacing:0.5px;}
+tbody tr{transition:background .12s;}
+tbody tr:hover{background:var(--accent-tint);}
+.tag{display:inline-block; padding:3px 10px; border-radius:20px; font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px;}
+.tag.ativo{background:var(--accent-tint); color:var(--confirm-green);}
+.tag.demitido{background:#faeaea; color:var(--stamp-red);}
+.row-actions{display:flex; gap:6px; flex-wrap:wrap;}
+.hidden{display:none !important;}
+.toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:11px 18px; border-radius:var(--radius-sm); font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; box-shadow:var(--shadow-md);}
+.toast.show{opacity:1;}
+.modal-overlay{display:none; position:fixed; inset:0; background:rgba(15,20,18,.55); z-index:50; align-items:center; justify-content:center; padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--paper); border-radius:18px; padding:24px; max-width:480px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-md);}
+.month-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+.month-nav button{border:1.5px solid var(--line); background:var(--paper); border-radius:var(--radius-sm); padding:5px 14px; cursor:pointer; transition:background .12s, border-color .12s;}
+.month-nav button:hover{background:var(--accent-tint); border-color:var(--accent);}
+.back-link{cursor:pointer; color:var(--accent); font-family:'Space Mono',monospace; font-size:12px; text-decoration:none;}
+.back-link:hover{text-decoration:underline;}
+
+.header-row{display:flex; align-items:center; gap:14px; margin-bottom:22px; padding-bottom:18px;}
+.menu-btn{
+  border:1.5px solid var(--line); background:var(--paper); border-radius:var(--radius-sm);
+  width:42px; height:42px; font-size:18px; cursor:pointer; flex-shrink:0; box-shadow:var(--shadow-sm);
+  transition:background .12s, border-color .12s;
+}
+.menu-btn:hover{background:var(--accent-tint); border-color:var(--accent);}
+.drawer-overlay{
+  position:fixed; inset:0; background:rgba(15,20,18,.55);
+  display:none; z-index:90;
+}
+.drawer-overlay.show{display:block;}
+.drawer{
+  position:fixed; top:0; left:0; bottom:0; width:88%; max-width:320px;
+  background:var(--paper-dark); border-right:1px solid var(--line); box-shadow:var(--shadow-md);
+  display:flex; flex-direction:column;
+  transform:translateX(-100%); transition:transform 0.22s ease;
+}
+.drawer-overlay.show .drawer{transform:translateX(0);}
+.drawer-header{
+  padding:18px 16px; border-bottom:1px solid var(--line); background:var(--paper);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.drawer-header h2{margin:0; font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase;}
+.drawer-close{border:1.5px solid var(--line); background:var(--paper); border-radius:var(--radius-sm); width:34px; height:34px; font-size:16px; cursor:pointer; transition:background .12s;}
+.drawer-close:hover{background:var(--accent-tint);}
+.drawer-body{flex:1; overflow-y:auto; padding:8px 0;}
+.drawer-account{padding:14px 16px; border-bottom:1px solid var(--line); background:var(--paper);}
+.drawer-account .acc-label{font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--muted); letter-spacing:1px;}
+.drawer-account .acc-value{font-family:'Inter',sans-serif; font-size:14px; font-weight:600; word-break:break-all;}
+.drawer-item{
+  display:flex; align-items:center; gap:10px; width:100%;
+  padding:13px 16px; border:none; background:none; text-align:left;
+  font-family:'Inter',sans-serif; font-size:14.5px; color:var(--ink);
+  cursor:pointer; transition:background .12s;
+}
+.drawer-item:hover, .drawer-item:active{background:var(--accent-tint);}
+.drawer-item .ic{width:20px; text-align:center; flex-shrink:0;}
+.drawer-item.danger{color:var(--stamp-red);}
+.drawer-item.danger:hover{background:#faeaea;}
+.drawer-footer{border-top:1px solid var(--line); padding:8px; background:var(--paper);}
+</style>
+</head>
+<body>
+<div class="drawer-overlay" id="drawerOverlay">
+  <div class="drawer">
+    <div class="drawer-header">
+      <h2>Menu</h2>
+      <button class="drawer-close" id="drawerCloseBtn" aria-label="Fechar menu">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-account">
+        <div class="acc-label">Conta ADM</div>
+        <div class="acc-value" id="drawerAccountEmail">—</div>
+      </div>
+      <button class="drawer-item" id="menuGoSolicitacoes"><span class="ic">⏳</span> Solicitações de ajuste</button>
+      <button class="drawer-item" id="menuGoCreate"><span class="ic">➕</span> Adicionar funcionário</button>
+      <button class="drawer-item" id="menuGoList"><span class="ic">👥</span> Funcionários</button>
+    </div>
+    <div class="drawer-footer">
+      <button class="drawer-item danger" id="menuLogoutBtn"><span class="ic">🚪</span> Sair</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="header-row">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menu">☰</button>
+    <div>
+      <div class="eyebrow">Controle de Ponto</div>
+      <h1 style="margin:0; border:none; padding:0;">Painel administrativo</h1>
+    </div>
+  </div>
+
+  <!-- login -->
+  <div class="card" id="loginCard">
+    <p style="font-size:13px; color:var(--muted);">Acesso restrito ao ADM. Use a conta separada de administrador.</p>
+    <div class="field-row">
+      <label for="adminEmail">E-mail do ADM</label>
+      <input type="email" id="adminEmail" autocomplete="username">
+    </div>
+    <div class="field-row">
+      <label for="adminPassword">Senha</label>
+      <input type="password" id="adminPassword" autocomplete="current-password">
+    </div>
+    <button class="btn" id="loginBtn">Entrar</button>
+    <div class="error-text" id="loginError"></div>
+  </div>
+
+  <!-- lista de funcionários -->
+  <div id="appArea" class="hidden">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong id="adminEmailLabel"></strong>
+          <div id="adminUidLabel" style="font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px;"></div>
+        </div>
+        <button class="btn outline small" id="logoutBtnOld" style="display:none;">Sair</button>
+      </div>
+      <button class="link-btn" id="diagBtn" style="margin-top:10px;">🩺 Testar diagnóstico de permissão</button>
+      <div id="diagResult" style="font-family:'Space Mono',monospace; font-size:11.5px; white-space:pre-wrap; margin-top:8px;"></div>
+    </div>
+
+    <div class="card" id="solicitacoesCard" style="border-color:var(--stamp-red);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="font-family:'Oswald',sans-serif; font-size:16px; text-transform:uppercase; margin:0;">Solicitações de ajuste</h2>
+        <span id="solicitacoesBadge" class="tag demitido" style="display:none;">0 pendente(s)</span>
+      </div>
+      <div id="solicitacoesList" style="margin-top:12px;">Carregando…</div>
+    </div>
+
+    <div class="card" id="createCard">
+      <h2 style="font-family:'Oswald',sans-serif; font-size:16px; text-transform:uppercase;">Adicionar funcionário</h2>
+      <p style="font-size:13px; color:var(--muted);">Só você cria as contas. Escolha uma senha inicial e passe pra pessoa — ela pode trocar depois pelo próprio app.</p>
+      <div class="field-row">
+        <label for="newNome">Nome</label>
+        <input type="text" id="newNome" placeholder="Nome completo">
+      </div>
+      <div class="field-row">
+        <label for="newTipoId">Login por</label>
+        <select id="newTipoId">
+          <option value="email">E-mail</option>
+          <option value="cpf">CPF</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <label for="newIdentifier" id="newIdentifierLabel">E-mail</label>
+        <input type="text" id="newIdentifier" placeholder="pessoa@email.com">
+      </div>
+      <div class="field-row">
+        <label for="newSenha">Senha inicial</label>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="newSenha" placeholder="mín. 6 caracteres">
+          <button class="btn outline small" id="gerarSenhaBtn" type="button">Gerar</button>
+        </div>
+      </div>
+      <button class="btn" id="criarFuncionarioBtn">Criar conta</button>
+      <div class="error-text" id="createError"></div>
+      <div id="createResult" style="display:none; margin-top:12px; padding:10px; border:1px dashed var(--ink); font-family:'Space Mono',monospace; font-size:12.5px;"></div>
+    </div>
+
+    <div class="card" id="listCard">
+      <h2 style="font-family:'Oswald',sans-serif; font-size:16px; text-transform:uppercase;">Funcionários</h2>
+      <div id="employeesTableWrap">Carregando…</div>
+      <details style="margin-top:14px;">
+        <summary style="font-size:12.5px; color:var(--muted); cursor:pointer;">Não vejo um funcionário que já existia antes</summary>
+        <p style="font-size:12.5px; color:var(--muted); margin:8px 0;">Abra o Firestore Database → Data → coleção "employees" no console do Firebase, copie o ID do documento da pessoa, e cole aqui:</p>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="recuperarUidInput" placeholder="UID do funcionário">
+          <button class="btn outline small" id="recuperarUidBtn">Adicionar</button>
+        </div>
+        <p class="error-text" id="recuperarUidMsg"></p>
+      </details>
+    </div>
+
+    <!-- detalhe de um funcionário -->
+    <div class="card hidden" id="detailCard">
+      <span class="back-link" id="backToListBtn">‹ voltar para a lista</span>
+      <h2 id="detailNome" style="font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; margin-top:6px;"></h2>
+      <div id="detailStatusTag" style="margin-bottom:14px;"></div>
+      <details style="margin-bottom:14px;">
+        <summary style="font-size:12.5px; color:var(--muted); cursor:pointer;">Detalhes da conta</summary>
+        <p style="font-size:12.5px; color:var(--muted); margin:8px 0 0; font-family:'Space Mono',monospace;" id="detailContaInfo"></p>
+      </details>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+        <button class="btn outline small" id="demitirBtn">Demitir</button>
+        <button class="btn outline small" id="readmitirBtn">Readmitir</button>
+        <button class="btn outline small" id="configPagamentoBtn">Configurar pagamento / diária</button>
+        <button class="btn outline small" id="ajusteManualBtn">✎ Ajustar horários manualmente</button>
+      </div>
+
+      <div class="card" style="border-color:#8a5a00; margin-bottom:16px;">
+        <h3 style="font-family:'Oswald',sans-serif; font-size:15px; text-transform:uppercase; margin:0 0 6px;">Banco de horas extras</h3>
+        <p id="saldoExtraLabel" style="font-family:'Space Mono',monospace; font-size:14px; margin:0 0 12px;">—</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn outline small" id="marcarAbonoBtn">🗓️ Marcar abono</button>
+          <button class="btn outline small" id="converterFolgaBtn">🔁 Usar em folga</button>
+          <button class="btn outline small" id="pagarDinheiroBtn">💵 Pagar em dinheiro</button>
+        </div>
+        <div id="historicoAjustesWrap" style="margin-top:12px; font-size:12.5px;"></div>
+      </div>
+
+      <div class="month-nav">
+        <button id="prevMonthBtn">‹</button>
+        <div id="monthLabel" style="font-family:'Space Mono',monospace;">—</div>
+        <button id="nextMonthBtn">›</button>
+      </div>
+      <div id="monthTableWrap">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- modal: marcar abono -->
+<div class="modal-overlay" id="abonoOverlay">
+  <div class="modal">
+    <h3>Marcar abono</h3>
+    <p class="hint-text">Dia dispensado com direito a pagamento — conta como dia trabalhado no salário, mas não gera Vale Alimentação nem Vale Transporte.</p>
+    <div class="field-row"><label for="abonoData">Data</label><input type="date" id="abonoData"></div>
+    <div class="field-row" id="abonoValorRow" style="display:none;">
+      <label for="abonoValorSelect">Valor do dia (diarista)</label>
+      <select id="abonoValorSelect">
+        <option value="">Sem valor (não remunerado)</option>
+        <option value="4">Diária de 4h</option>
+        <option value="6">Diária de 6h</option>
+        <option value="8">Diária de 8h</option>
+      </select>
+    </div>
+    <div class="field-row"><label for="abonoMotivo">Motivo (referência)</label><textarea id="abonoMotivo" rows="2" placeholder="Ex.: atestado médico, licença, viagem a trabalho..."></textarea></div>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn outline" id="abonoCancel">Cancelar</button>
+      <button class="btn" id="abonoSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal: converter hora extra em folga -->
+<div class="modal-overlay" id="folgaOverlay">
+  <div class="modal">
+    <h3>Usar hora extra como folga</h3>
+    <p class="hint-text">O dia escolhido fica marcado como folga — conta como dia trabalhado no salário, mas não gera Vale Alimentação nem Vale Transporte. As horas usadas saem do saldo de hora extra.</p>
+    <div class="field-row"><label for="folgaData">Data da folga</label><input type="date" id="folgaData"></div>
+    <div class="field-row" style="display:flex; gap:10px;">
+      <div style="flex:1;"><label for="folgaHorasH">Horas de saldo a usar</label><input type="number" id="folgaHorasH" step="1" min="0" placeholder="Ex.: 5"></div>
+      <div style="flex:1;"><label for="folgaHorasM">Minutos</label><input type="number" id="folgaHorasM" step="1" min="0" max="59" placeholder="Ex.: 30"></div>
+    </div>
+    <div class="field-row" id="folgaValorRow" style="display:none;">
+      <label for="folgaValorSelect">Valor do dia (diarista)</label>
+      <select id="folgaValorSelect">
+        <option value="">Sem valor (não remunerado)</option>
+        <option value="4">Diária de 4h</option>
+        <option value="6">Diária de 6h</option>
+        <option value="8">Diária de 8h</option>
+      </select>
+    </div>
+    <div class="field-row"><label for="folgaMotivo">Motivo (referência)</label><textarea id="folgaMotivo" rows="2" placeholder="Ex.: compensação das horas extras de tal semana..."></textarea></div>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn outline" id="folgaCancel">Cancelar</button>
+      <button class="btn" id="folgaSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal: ajuste manual de horários -->
+<div class="modal-overlay" id="ajusteManualOverlay">
+  <div class="modal" style="max-height:85vh; overflow-y:auto;">
+    <h3>Ajustar horários manualmente</h3>
+    <p class="hint-text">Ajuste direto, sem precisar de solicitação do funcionário. Se o dia estiver marcado como folga/abono e a pessoa realmente trabalhou, preencha os horários abaixo — a folga/abono é desfeita e as horas voltam a contar normalmente.</p>
+    <div class="field-row"><label for="ajusteData">Data</label><input type="date" id="ajusteData"></div>
+    <p id="ajusteAvisoEspecial" class="hint-text" style="display:none; color:#8a5a00; font-weight:bold;"></p>
+    <div class="field-row" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="ajusteFalta" style="width:auto;">
+      <label for="ajusteFalta" style="text-transform:none;letter-spacing:0;font-weight:normal;margin:0;">Marcar como falta</label>
+    </div>
+    <div id="ajusteHorariosFields">
+      <div class="field-row"><label for="ajusteEntrada">Entrada</label><input type="time" id="ajusteEntrada"></div>
+      <div class="field-row" id="ajusteAlmocoRow">
+        <label for="ajusteAlmocoSaida">Saída Almoço</label><input type="time" id="ajusteAlmocoSaida">
+        <label for="ajusteAlmocoVolta" style="margin-top:8px;">Volta Almoço</label><input type="time" id="ajusteAlmocoVolta">
+      </div>
+      <div class="field-row"><label for="ajusteSaida">Saída</label><input type="time" id="ajusteSaida"></div>
+    </div>
+    <div class="field-row"><label for="ajusteMotivo">Motivo do ajuste (referência)</label><textarea id="ajusteMotivo" rows="2" placeholder="Ex.: esqueceu de bater o ponto, trabalhou no dia da folga..."></textarea></div>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn outline" id="ajusteManualCancel">Cancelar</button>
+      <button class="btn" id="ajusteManualSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal: pagar hora extra em dinheiro -->
+<div class="modal-overlay" id="dinheiroOverlay">
+  <div class="modal">
+    <h3>Pagar hora extra em dinheiro</h3>
+    <p class="hint-text">Registra que uma parte do saldo de hora extra foi paga em dinheiro (em vez de virar folga). Aparece no fechamento do mês do funcionário como um valor a receber.</p>
+    <div class="field-row" style="display:flex; gap:10px;">
+      <div style="flex:1;"><label for="dinheiroHorasH">Horas de saldo a pagar</label><input type="number" id="dinheiroHorasH" step="1" min="0" placeholder="Ex.: 5"></div>
+      <div style="flex:1;"><label for="dinheiroHorasM">Minutos</label><input type="number" id="dinheiroHorasM" step="1" min="0" max="59" placeholder="Ex.: 30"></div>
+    </div>
+    <div class="field-row"><label for="dinheiroValor">Valor pago (R$)</label><input type="number" id="dinheiroValor" step="0.01" min="0"></div>
+    <div class="field-row"><label for="dinheiroMes">Referente ao mês</label><input type="month" id="dinheiroMes"></div>
+    <div class="field-row"><label for="dinheiroMotivo">Motivo (referência)</label><textarea id="dinheiroMotivo" rows="2" placeholder="Ex.: horas extras de outubro pagas à parte..."></textarea></div>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn outline" id="dinheiroCancel">Cancelar</button>
+      <button class="btn" id="dinheiroSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal: configurar pagamento -->
+<div class="modal-overlay" id="payConfigOverlay">
+  <div class="modal" style="max-height:85vh; overflow-y:auto;">
+    <h3>Configurar pagamento</h3>
+    <div class="field-row">
+      <label for="tipoPagamentoSelect">Tipo de vínculo</label>
+      <select id="tipoPagamentoSelect">
+        <option value="estagiario">Estagiário</option>
+        <option value="clt">CLT</option>
+        <option value="diarista">Diarista</option>
+      </select>
+    </div>
+
+    <div id="salarioFields">
+      <div class="field-row"><label for="salarioMensal">Salário mensal (R$)</label><input type="number" id="salarioMensal" step="0.01" min="0"></div>
+    </div>
+
+    <div id="diaristaFields">
+      <div class="field-row"><label for="valor4h">Valor da diária de 4 horas (R$)</label><input type="number" id="valor4h" step="0.01" min="0"></div>
+      <div class="field-row"><label for="valor6h">Valor da diária de 6 horas (R$)</label><input type="number" id="valor6h" step="0.01" min="0"></div>
+      <div class="field-row"><label for="valor8h">Valor da diária de 8 horas (R$)</label><input type="number" id="valor8h" step="0.01" min="0"></div>
+    </div>
+
+    <div class="field-row"><label for="vaValorDia">Vale Alimentação por dia trabalhado (R$)</label><input type="number" id="vaValorDia" step="0.01" min="0"></div>
+    <div class="field-row">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:normal;text-transform:none;letter-spacing:0;">
+        <input type="checkbox" id="vaFormaDinheiro" style="width:auto;">
+        Vale Alimentação pago em dinheiro (desmarcado = cartão benefício)
+      </label>
+    </div>
+
+    <div class="field-row" style="border-top:1.5px solid var(--line); padding-top:12px;">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:normal;text-transform:none;letter-spacing:0;">
+        <input type="checkbox" id="vtAtivoCheck" style="width:auto;">
+        Usa vale transporte
+      </label>
+    </div>
+    <div id="vtFields" style="display:none;">
+      <div class="field-row"><label for="vtValorDia">Valor do vale transporte por dia (R$)</label><input type="number" id="vtValorDia" step="0.01" min="0"></div>
+      <div class="field-row"><label for="vtPercentual">Desconto legal sobre o salário — opcional (%)</label><input type="number" id="vtPercentual" step="0.1" min="0" max="100" placeholder="Deixe em branco ou 0 se não desconta nada"></div>
+      <p class="hint-text" style="margin-top:-4px;">O valor do Vale Transporte aparece pro funcionário mesmo com esse campo em 0 — esse percentual é só um desconto opcional sobre o salário (limite legal: 6%).</p>
+      <div class="field-row">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:normal;text-transform:none;letter-spacing:0;">
+          <input type="checkbox" id="vtFormaDinheiro" style="width:auto;">
+          Vale Transporte pago em dinheiro (desmarcado = cartão benefício)
+        </label>
+      </div>
+    </div>
+
+    <p class="hint-text" id="cltHint" style="display:none;">Como é CLT, o INSS é descontado automaticamente pela tabela vigente, e o FGTS (informativo) é calculado também.</p>
+
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn outline" id="payConfigCancel">Cancelar</button>
+      <button class="btn" id="payConfigSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script>
+// Mesmo projeto Firebase do app de ponto — mesmo banco de dados.
+const firebaseConfig = {
+  apiKey: "AIzaSyA_hyosRTkvlk8_Qj-V9k0-2fiy1b9MYVM",
+  authDomain: "controle-ponto-7a04d.firebaseapp.com",
+  projectId: "controle-ponto-7a04d",
+  storageBucket: "controle-ponto-7a04d.firebasestorage.app",
+  messagingSenderId: "458473922894",
+  appId: "1:458473922894:web:f72ee3fa6f017af660fe1f",
+  measurementId: "G-F7VQSSTHNN"
+};
+// App nomeado (não o "[DEFAULT]") só pra isolar a sessão de login do ADM
+// da sessão do app do funcionário — mesmo os dois sendo servidos do
+// mesmo domínio, cada um guarda o login numa "gaveta" separada.
+const adminApp = firebase.initializeApp(firebaseConfig, 'AdminApp');
+const auth = adminApp.auth();
+const FIRESTORE_REST_BASE = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents`;
+
+const TIPOS = ['entrada','almocoSaida','almocoVolta','saida'];
+const LABELS = {entrada:'Entrada', almocoSaida:'Saída Almoço', almocoVolta:'Volta Almoço', saida:'Saída'};
+const RETENCAO_DIAS_APOS_DEMISSAO = 90; // três meses
+
+let employees = []; // lista carregada da coleção employees
+let currentDetailUid = null;
+let viewMonth = null;
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function showToast(msg, ms=3500){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), ms);
+}
+function on(id, ev, fn){ const el=document.getElementById(id); if(el) el.addEventListener(ev, fn); }
+// Escapa texto vindo de qualquer lugar (nome de funcionário, justificativa,
+// etc.) antes de colocar na tela via innerHTML — sem isso, alguém poderia
+// digitar código HTML/JS no lugar de um nome e ele rodaria na tela do ADM.
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function authToken(){
+  return auth.currentUser ? await auth.currentUser.getIdToken() : null;
+}
+
+function firestoreFieldsToObj(fields){
+  if(!fields) return {};
+  const out = {};
+  for(const k in fields){
+    const v = fields[k];
+    if(v.stringValue !== undefined) out[k] = v.stringValue;
+    else if(v.integerValue !== undefined) out[k] = parseInt(v.integerValue,10);
+    else if(v.doubleValue !== undefined) out[k] = v.doubleValue;
+    else if(v.booleanValue !== undefined) out[k] = v.booleanValue;
+    else if(v.nullValue !== undefined) out[k] = null;
+    else if(v.mapValue !== undefined) out[k] = firestoreFieldsToObj(v.mapValue.fields||{});
+    else if(v.arrayValue !== undefined) out[k] = (v.arrayValue.values||[]).map(item=>{
+      if(item.stringValue !== undefined) return item.stringValue;
+      if(item.integerValue !== undefined) return parseInt(item.integerValue,10);
+      if(item.mapValue !== undefined) return firestoreFieldsToObj(item.mapValue.fields||{});
+      return null;
+    });
+    else out[k] = null;
+  }
+  return out;
+}
+function objToFirestoreFields(obj){
+  const fields = {};
+  for(const k in obj){
+    const v = obj[k];
+    if(v === null || v === undefined) fields[k] = { nullValue:null };
+    else if(Array.isArray(v)) fields[k] = { arrayValue:{ values: v.map(item=>{
+      if(typeof item === 'number') return Number.isInteger(item) ? {integerValue:String(item)} : {doubleValue:item};
+      if(typeof item === 'object') return { mapValue:{ fields: objToFirestoreFields(item) } };
+      return { stringValue:String(item) };
+    }) } };
+    else if(typeof v === 'number') fields[k] = Number.isInteger(v) ? { integerValue:String(v) } : { doubleValue:v };
+    else if(typeof v === 'boolean') fields[k] = { booleanValue:v };
+    else if(typeof v === 'object') fields[k] = { mapValue:{ fields: objToFirestoreFields(v) } };
+    else fields[k] = { stringValue:String(v) };
+  }
+  return fields;
+}
+
+// --- índice de funcionários: como a coleção "employees" às vezes nega
+// list() (é um comportamento chato do Firestore com listas grandes/regras
+// baseadas em exists()), o painel para de "listar a coleção" e passa a
+// ler um documento único com a lista de UIDs — isso usa "get", que já
+// confirmamos que funciona certinho.
+async function getEmployeeIndex(){
+  const idx = await getIndex('employees');
+  return idx ? { uids: idx.ids } : null;
+}
+async function addUidToIndex(novoUid){
+  const idx = await getEmployeeIndex();
+  if(!idx) return false;
+  if(idx.uids.includes(novoUid)) return true;
+  const token = await authToken();
+  const novaLista = [...idx.uids, novoUid];
+  const res = await fetch(`${FIRESTORE_REST_BASE}/admin_index/employees`, {
+    method:'PATCH',
+    headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ fields: objToFirestoreFields({ ids: novaLista }) })
+  });
+  return res.ok;
+}
+
+function isValidCPF(cpf){
+  const s = cpf.replace(/\D/g,'');
+  if(s.length !== 11 || /^(\d)\1{10}$/.test(s)) return false;
+  let soma = 0;
+  for(let i=0;i<9;i++) soma += parseInt(s[i]) * (10-i);
+  let resto = (soma*10) % 11;
+  if(resto===10) resto=0;
+  if(resto !== parseInt(s[9])) return false;
+  soma = 0;
+  for(let i=0;i<10;i++) soma += parseInt(s[i]) * (11-i);
+  resto = (soma*10) % 11;
+  if(resto===10) resto=0;
+  return resto === parseInt(s[10]);
+}
+function identifierToAuthEmail(tipo, valor){
+  if(tipo === 'cpf'){
+    const digits = valor.replace(/\D/g,'');
+    return `cpf${digits}@pontoapp.local`;
+  }
+  return valor.trim();
+}
+function gerarSenhaAleatoria(){
+  const alfabeto = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const arr = new Uint32Array(8);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, n=>alfabeto[n % alfabeto.length]).join('');
+}
+function toggleNewIdType(){
+  const tipo = document.getElementById('newTipoId').value;
+  const input = document.getElementById('newIdentifier');
+  const label = document.getElementById('newIdentifierLabel');
+  if(tipo === 'cpf'){
+    label.textContent = 'CPF'; input.placeholder = 'Somente números';
+  }else{
+    label.textContent = 'E-mail'; input.placeholder = 'pessoa@email.com';
+  }
+}
+// Cria a conta de login (Firebase Auth) num app secundário, pra não
+// derrubar a sessão do ADM, e depois grava o cadastro em employees/{uid}.
+async function criarFuncionario(){
+  const errEl = document.getElementById('createError');
+  const resultEl = document.getElementById('createResult');
+  errEl.textContent = ''; resultEl.style.display = 'none';
+  const nome = document.getElementById('newNome').value.trim();
+  const tipo = document.getElementById('newTipoId').value;
+  const idRaw = document.getElementById('newIdentifier').value.trim();
+  const senha = document.getElementById('newSenha').value;
+  if(!nome){ errEl.textContent = 'Informe o nome.'; return; }
+  if(!idRaw){ errEl.textContent = 'Informe o e-mail ou CPF.'; return; }
+  if(tipo === 'cpf' && !isValidCPF(idRaw)){ errEl.textContent = 'CPF inválido.'; return; }
+  if(!senha || senha.length < 6){ errEl.textContent = 'A senha deve ter pelo menos 6 caracteres.'; return; }
+  const authEmail = identifierToAuthEmail(tipo, idRaw);
+
+  const btn = document.getElementById('criarFuncionarioBtn');
+  btn.disabled = true; btn.textContent = 'Criando...';
+  let secApp;
+  try{
+    secApp = firebase.apps.find(a=>a.name==='Secondary') || firebase.initializeApp(firebaseConfig, 'Secondary');
+    const secAuth = secApp.auth();
+    let novoUid;
+    try{
+      const cred = await secAuth.createUserWithEmailAndPassword(authEmail, senha);
+      novoUid = cred.user.uid;
+    }finally{
+      try{ await secAuth.signOut(); }catch(e){}
+    }
+    const fields = {
+      nome, identifier: authEmail, status:'ativo', demitidoEm:null,
+      tipoPagamento:'estagiario', salario:0, va:0, vaForma:'cartao', vtAtivo:false, vtValorDia:0, vtPercentual:0, vtForma:'cartao', diariaValores:{'4':0,'6':0,'8':0},
+      createdAt: new Date().toISOString()
+    };
+    const token = await authToken();
+    const res = await fetch(`${FIRESTORE_REST_BASE}/employees/${novoUid}`, {
+      method:'PATCH',
+      headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ fields: objToFirestoreFields(fields) })
+    });
+    if(!res.ok){ errEl.textContent = 'Conta de login criada, mas houve erro ao salvar o cadastro. Recarregue e tente configurar depois.'; return; }
+    await addUidToIndex(novoUid);
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `Conta criada! Repasse pra pessoa:<br><b>Login:</b> ${tipo==='cpf'?idRaw:authEmail}<br><b>Senha:</b> ${senha}<br><span style="color:var(--muted); font-family:'Inter',sans-serif; font-size:11.5px;">Ela pode trocar a senha depois, dentro do app.</span>`;
+    document.getElementById('newNome').value = '';
+    document.getElementById('newIdentifier').value = '';
+    document.getElementById('newSenha').value = '';
+    showToast('Funcionário criado.');
+    await loadEmployees();
+  }catch(e){
+    if(e.code === 'auth/email-already-in-use'){
+      errEl.textContent = tipo==='cpf' ? 'Esse CPF já tem conta.' : 'Esse e-mail já tem conta.';
+    }else if(e.code === 'auth/invalid-email'){
+      errEl.textContent = 'E-mail inválido.';
+    }else if(e.code === 'auth/weak-password'){
+      errEl.textContent = 'Senha muito fraca.';
+    }else{
+      errEl.textContent = 'Erro ao criar conta (' + (e.code || e.message) + ').';
+    }
+  }finally{
+    btn.disabled = false; btn.textContent = 'Criar conta';
+  }
+}
+
+// --- lista de funcionários (exige ser ADM pelas regras do Firestore) ---
+// --- solicitações de ajuste/exclusão de ponto ---
+const LABELS_CAMPO = {entrada:'Entrada', almocoSaida:'Saída Almoço', almocoVolta:'Volta Almoço', saida:'Saída', falta:'Falta'};
+let solicitacoesPendentesAntes = 0;
+
+async function getIndex(indexDocId){
+  const token = await authToken();
+  const res = await fetch(`${FIRESTORE_REST_BASE}/admin_index/${indexDocId}`, { headers:{ Authorization:`Bearer ${token}` } });
+  if(res.status === 404) return { ids: [] };
+  if(!res.ok) return null;
+  const data = await res.json();
+  return { ids: firestoreFieldsToObj(data.fields).ids || [] };
+}
+async function loadSolicitacoes(){
+  const listEl = document.getElementById('solicitacoesList');
+  const badge = document.getElementById('solicitacoesBadge');
+  const idx = await getIndex('solicitacoes');
+  if(!idx){
+    listEl.innerHTML = `<p class="error-text">Erro ao carregar o índice de solicitações.</p>`;
+    badge.style.display='none';
+    return;
+  }
+  const token = await authToken();
+  const resultados = await Promise.all(idx.ids.map(async (id)=>{
+    try{
+      const res = await fetch(`${FIRESTORE_REST_BASE}/solicitacoes/${id}`, { headers:{ Authorization:`Bearer ${token}` } });
+      if(!res.ok) return null;
+      const doc = await res.json();
+      return { id, ...firestoreFieldsToObj(doc.fields) };
+    }catch(e){ return null; }
+  }));
+  const todas = resultados.filter(Boolean);
+  const pendentes = todas.filter(s=>s.status==='pendente').sort((a,b)=> (a.criadoEm||'') < (b.criadoEm||'') ? 1 : -1);
+
+  // "notificação": título da aba + notificação do navegador (só funciona
+  // com a aba aberta — sem um servidor por trás não dá pra avisar com o
+  // site fechado).
+  document.title = pendentes.length>0 ? `(${pendentes.length}) Painel ADM` : 'Painel ADM';
+  if(pendentes.length > solicitacoesPendentesAntes && solicitacoesPendentesAntes !== 0){
+    if(window.Notification && Notification.permission === 'granted'){
+      new Notification('Nova solicitação de ajuste de ponto', { body:`${pendentes.length} pendente(s) aguardando aprovação.` });
+    }
+  }
+  solicitacoesPendentesAntes = pendentes.length;
+
+  if(pendentes.length===0){
+    badge.style.display = 'none';
+    listEl.innerHTML = '<p style="font-size:13px; color:var(--muted);">Nenhuma solicitação pendente.</p>';
+    return;
+  }
+  badge.style.display = 'inline-block';
+  badge.textContent = `${pendentes.length} pendente(s)`;
+  listEl.innerHTML = pendentes.map(s=>{
+    const antigo = s.antigo || {};
+    const novo = s.novo || {};
+    let diffHtml;
+    if(s.tipo === 'exclusao'){
+      diffHtml = `<span style="color:var(--stamp-red);">Excluir o dia inteiro</span> (valores atuais: ${esc(Object.keys(LABELS_CAMPO).filter(k=>k!=='falta').map(k=>antigo[k]?`${LABELS_CAMPO[k]} ${antigo[k]}`:null).filter(Boolean).join(', ') || (antigo.falta?'Falta':'sem registros'))})`;
+    }else{
+      const campos = Object.keys(LABELS_CAMPO);
+      const linhas = campos.filter(k=> (antigo[k]||null) !== (novo[k]||null) ).map(k=>{
+        const de = k==='falta' ? (antigo.falta?'Falta':'—') : (antigo[k]||'—');
+        const para = k==='falta' ? (novo.falta?'Falta':'—') : (novo[k]||'—');
+        return `${esc(LABELS_CAMPO[k])}: <b>${esc(de)}</b> → <b>${esc(para)}</b>`;
+      });
+      diffHtml = linhas.length ? linhas.join('<br>') : 'Sem diferenças nos horários.';
+    }
+    return `<div style="border-bottom:1px solid var(--line); padding:10px 0;">
+      <div><strong>${esc(s.nomeFuncionario||'—')}</strong> · ${esc((s.dateKey||'').split('-').reverse().join('/'))} · ${s.tipo==='exclusao'?'Exclusão':'Edição'}</div>
+      <div style="font-size:13px; margin:6px 0;">${diffHtml}</div>
+      <div style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Justificativa: "${esc(s.justificativa||'')}"${s.editadoEm ? ' <em>(ajustado pelo funcionário depois de enviado)</em>' : ''}</div>
+      <div class="row-actions">
+        <button class="btn small outline" data-approve="${s.id}" data-uid="${s.uid}">Aprovar</button>
+        <button class="btn small danger" data-reject="${s.id}" data-uid="${s.uid}">Rejeitar</button>
+      </div>
+    </div>`;
+  }).join('');
+  listEl.querySelectorAll('button[data-approve]').forEach(btn=>{
+    btn.addEventListener('click', ()=>resolverSolicitacao(btn.getAttribute('data-approve'), btn.getAttribute('data-uid'), true));
+  });
+  listEl.querySelectorAll('button[data-reject]').forEach(btn=>{
+    btn.addEventListener('click', ()=>resolverSolicitacao(btn.getAttribute('data-reject'), btn.getAttribute('data-uid'), false));
+  });
+}
+
+async function resolverSolicitacao(id, uid, aprovar){
+  const token = await authToken();
+  // pega a solicitação específica pra saber data/tipo/novo valor
+  const res = await fetch(`${FIRESTORE_REST_BASE}/solicitacoes/${id}`, { headers:{ Authorization:`Bearer ${token}` } });
+  if(!res.ok){ showToast('Erro ao carregar a solicitação.'); return; }
+  const doc = await res.json();
+  const s = firestoreFieldsToObj(doc.fields);
+
+  // aplica (ou não) no ponto-records do funcionário
+  const records = await fetchRecords(uid);
+  const rec = records[s.dateKey];
+  // Se o funcionário já mandou um pedido mais novo pro mesmo dia (o pendingRequest
+  // atual tem um solicitacaoId diferente deste), esta solicitação está desatualizada
+  // — resolver ela não deve mexer no valor batido, senão um pedido antigo aprovado
+  // fora de ordem pisaria em cima do pedido mais recente.
+  const desatualizada = !!(rec && rec.pendingRequest && rec.pendingRequest.solicitacaoId && rec.pendingRequest.solicitacaoId !== id);
+  if(desatualizada){
+    showToast('Essa solicitação já foi substituída por um pedido mais recente do mesmo dia — nada foi alterado.', 6500);
+  }else if(aprovar){
+    if(s.tipo === 'exclusao'){
+      delete records[s.dateKey];
+    }else{
+      records[s.dateKey] = { ...s.novo, avisoAprovado:{ quando: new Date().toISOString() } };
+    }
+  }else if(rec && rec.pendingRequest){
+    delete rec.pendingRequest;
+    rec.avisoRecusado = { justificativa: s.justificativa||'', quando: new Date().toISOString() };
+    const semDados = !rec.entrada && !rec.almocoSaida && !rec.almocoVolta && !rec.saida && !rec.falta;
+    // mesmo sem horários (dia que só existia pra pedir exclusão), mantém
+    // o registro só pra guardar o aviso — o funcionário precisa ver que
+    // foi recusado antes de sumir de vez.
+    records[s.dateKey] = rec;
+  }
+
+  // Grava o novo horário — e AGORA confere se a gravação realmente funcionou.
+  // Antes, se essa chamada falhasse (ex.: permissão negada nas regras do
+  // Firestore), o código seguia em frente do mesmo jeito: marcava a
+  // solicitação como resolvida e mostrava "aprovada" mesmo sem o horário
+  // ter sido realmente alterado.
+  let gravouOk = true;
+  if(!desatualizada){
+    try{
+      const patchRes = await fetch(`${FIRESTORE_REST_BASE}/users/${uid}/appdata/ponto-records`, {
+        method:'PATCH',
+        headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({ fields:{ value:{ stringValue: JSON.stringify(records) }, updatedAt:{ timestampValue:new Date().toISOString() } } })
+      });
+      if(!patchRes.ok){
+        gravouOk = false;
+        let detail = '';
+        try{ const errBody = await patchRes.json(); detail = errBody.error && errBody.error.message ? ': ' + errBody.error.message : ''; }catch(e){}
+        showToast(`Não deu pra aplicar o horário (HTTP ${patchRes.status}${detail}). A solicitação continua pendente — verifique as regras do Firestore.`, 9000);
+      }
+    }catch(e){
+      gravouOk = false;
+      showToast('Erro de rede ao aplicar o horário. A solicitação continua pendente.', 7000);
+    }
+  }
+  if(!gravouOk){
+    // não marca como resolvida — fica pendente pra tentar de novo depois de
+    // corrigir o problema, em vez de sumir da lista sem o horário ter mudado.
+    await loadSolicitacoes();
+    return;
+  }
+
+  // marca a solicitação como resolvida
+  await fetch(`${FIRESTORE_REST_BASE}/solicitacoes/${id}?updateMask.fieldPaths=status&updateMask.fieldPaths=respondidoEm`, {
+    method:'PATCH',
+    headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ fields: objToFirestoreFields({ status: aprovar?'aprovado':'rejeitado', respondidoEm:new Date().toISOString() }) })
+  });
+
+  if(!desatualizada) showToast(aprovar ? 'Solicitação aprovada.' : 'Solicitação rejeitada.');
+  await loadSolicitacoes();
+  if(currentDetailUid === uid) await renderMonth();
+}
+
+async function loadEmployees(){
+  const idx = await getEmployeeIndex();
+  const wrap = document.getElementById('employeesTableWrap');
+  if(!idx){
+    const uid = auth.currentUser ? auth.currentUser.uid : '—';
+    wrap.innerHTML = `<p class="error-text">Erro ao carregar o índice de funcionários.<br>UID desta conta: <b>${uid}</b><br>Confira se existe o documento <b>admins/${uid}</b> no Firestore.</p>`;
+    return;
+  }
+  const token = await authToken();
+  const resultados = await Promise.all(idx.uids.map(async (uid)=>{
+    try{
+      const res = await fetch(`${FIRESTORE_REST_BASE}/employees/${uid}`, { headers:{ Authorization:`Bearer ${token}` } });
+      if(!res.ok) return null;
+      const doc = await res.json();
+      return { uid, ...firestoreFieldsToObj(doc.fields) };
+    }catch(e){ return null; }
+  }));
+  employees = resultados.filter(Boolean);
+  await cleanupDemitidosAntigos();
+  renderEmployeesTable();
+}
+// Pra funcionários criados ANTES desse índice existir: cola o UID (dá pra
+// ver em Firestore Database → Data → coleção "employees", no console) e
+// isso confere se o cadastro existe e adiciona no índice.
+async function recuperarUidExistente(){
+  const uid = document.getElementById('recuperarUidInput').value.trim();
+  const msgEl = document.getElementById('recuperarUidMsg');
+  if(!uid){ msgEl.textContent = 'Cole o UID do funcionário.'; return; }
+  const token = await authToken();
+  const res = await fetch(`${FIRESTORE_REST_BASE}/employees/${uid}`, { headers:{ Authorization:`Bearer ${token}` } });
+  if(!res.ok){ msgEl.textContent = 'Não encontrei um cadastro com esse UID.'; return; }
+  const ok = await addUidToIndex(uid);
+  if(!ok){ msgEl.textContent = 'Encontrei o cadastro, mas não consegui salvar no índice.'; return; }
+  msgEl.textContent = 'Adicionado! Atualizando a lista...';
+  document.getElementById('recuperarUidInput').value = '';
+  await loadEmployees();
+  msgEl.textContent = '';
+}
+function renderEmployeesTable(){
+  const wrap = document.getElementById('employeesTableWrap');
+  if(employees.length === 0){ wrap.innerHTML = '<p>Nenhum funcionário cadastrado ainda.</p>'; return; }
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table><thead><tr><th>Nome</th><th>Status</th><th>Pagamento</th><th></th></tr></thead><tbody>
+    ${employees.map(e=>`<tr>
+      <td>${esc(e.nome||'—')}</td>
+      <td><span class="tag ${e.status==='demitido'?'demitido':'ativo'}">${esc(e.status||'ativo')}</span></td>
+      <td>${e.tipoPagamento==='diarista'?'Diarista':(e.tipoPagamento==='clt'||e.tipoPagamento==='mensalista'?'CLT':'Estagiário')}</td>
+      <td><button class="btn small outline" data-uid="${esc(e.uid)}">Ver</button></td>
+    </tr>`).join('')}
+  </tbody></table></div>`;
+  wrap.querySelectorAll('button[data-uid]').forEach(btn=>{
+    btn.addEventListener('click', ()=>openDetail(btn.getAttribute('data-uid')));
+  });
+}
+
+// --- limpeza automática: 3 meses após demitir, apaga o histórico de ponto ---
+async function cleanupDemitidosAntigos(){
+  const agora = Date.now();
+  const token = await authToken();
+  for(const e of employees){
+    if(e.status !== 'demitido' || !e.demitidoEm) continue;
+    const demitidoEm = new Date(e.demitidoEm).getTime();
+    const dias = (agora - demitidoEm) / (1000*60*60*24);
+    if(dias >= RETENCAO_DIAS_APOS_DEMISSAO){
+      try{
+        await fetch(`${FIRESTORE_REST_BASE}/users/${e.uid}/appdata/ponto-records`, {
+          method:'DELETE', headers:{ Authorization:`Bearer ${token}` }
+        });
+      }catch(err){ /* tenta de novo na próxima abertura do painel */ }
+    }
+  }
+}
+
+// --- detalhe do funcionário ---
+async function openDetail(uid){
+  currentDetailUid = uid;
+  const e = employees.find(x=>x.uid===uid);
+  document.getElementById('listCard').classList.add('hidden');
+  document.getElementById('detailCard').classList.remove('hidden');
+  document.getElementById('detailNome').textContent = e.nome || '—';
+  document.getElementById('detailStatusTag').innerHTML = `<span class="tag ${e.status==='demitido'?'demitido':'ativo'}">${esc(e.status||'ativo')}</span> · ${e.tipoPagamento==='diarista'?'Diarista':(e.tipoPagamento==='clt'||e.tipoPagamento==='mensalista'?'CLT':'Estagiário')}`;
+  document.getElementById('detailContaInfo').innerHTML = `Identificação: ${esc(e.identifier||'—')}<br>UID: ${esc(e.uid)}`;
+  viewMonth = new Date().toISOString().slice(0,7);
+  await Promise.all([renderMonth(), renderSaldoExtra()]);
+}
+function backToList(){
+  document.getElementById('detailCard').classList.add('hidden');
+  document.getElementById('listCard').classList.remove('hidden');
+}
+function shiftMonth(mk, delta){
+  let [y,m] = mk.split('-').map(Number);
+  m += delta; if(m<1){m=12;y-=1;} else if(m>12){m=1;y+=1;}
+  return `${y}-${pad(m)}`;
+}
+function monthLabelOf(mk){
+  const [y,m] = mk.split('-');
+  const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  return `${meses[+m-1]} de ${y}`;
+}
+function timeToMinutes(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
+function formatMinutes(mins){ mins = Math.round(mins || 0); const h=Math.floor(mins/60); const mm=mins%60; return `${h}h${pad(mm)}`; }
+
+async function fetchRecords(uid){
+  const token = await authToken();
+  const res = await fetch(`${FIRESTORE_REST_BASE}/users/${uid}/appdata/ponto-records`, { headers:{ Authorization:`Bearer ${token}` } });
+  if(res.status === 404) return {};
+  if(!res.ok) return {};
+  const data = await res.json();
+  const raw = data.fields && data.fields.value && data.fields.value.stringValue;
+  try{ return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; }
+}
+// Grava de volta o objeto inteiro de pontos batidos de um funcionário —
+// usado pra marcar abono/folga num dia específico.
+async function writeUserAppdata(uid, key, value){
+  const token = await authToken();
+  const url = `${FIRESTORE_REST_BASE}/users/${uid}/appdata/${key}`;
+  const body = { fields: { value: { stringValue: value }, updatedAt: { timestampValue: new Date().toISOString() } } };
+  const res = await fetch(url, { method:'PATCH', headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+  return res.ok;
+}
+async function fetchExtrasPagos(uid){
+  const token = await authToken();
+  const res = await fetch(`${FIRESTORE_REST_BASE}/users/${uid}/appdata/ponto-extras-pagos`, { headers:{ Authorization:`Bearer ${token}` } });
+  if(res.status === 404) return [];
+  if(!res.ok) return [];
+  const data = await res.json();
+  const raw = data.fields && data.fields.value && data.fields.value.stringValue;
+  try{ return raw ? JSON.parse(raw) : []; }catch(e){ return []; }
+}
+// Calcula, a partir dos pontos batidos, quanto de hora extra ainda não foi
+// usado (nem virado folga, nem pago em dinheiro) — mesma lógica de fim de
+// semana e diarista do app do funcionário, simplificada aqui.
+function calcExtraMinsDoRegistro(rec, key){
+  if(!rec || rec.falta || rec.abono || rec.folga) return 0;
+  let fimDeSemana = false;
+  if(key){
+    const [y,m,d] = key.split('-').map(Number);
+    const dow = new Date(y, m-1, d).getDay();
+    fimDeSemana = (dow===0 || dow===6);
+  }
+  if(rec.diarista){
+    const e=timeToMinutes(rec.entrada), s=timeToMinutes(rec.saida);
+    if(e===null||s===null) return 0;
+    const mins = Math.max(0, s-e);
+    return fimDeSemana ? mins : 0;
+  }
+  const e=timeToMinutes(rec.entrada), as=timeToMinutes(rec.almocoSaida), av=timeToMinutes(rec.almocoVolta), s=timeToMinutes(rec.saida);
+  let mins = 0;
+  if(e!==null && as!==null) mins += (as-e);
+  if(av!==null && s!==null) mins += (s-av);
+  if(mins<=0) return 0;
+  return fimDeSemana ? mins : (mins > 6*60 ? mins - 6*60 : 0);
+}
+// Lê o consumo de saldo em minutos, aceitando tanto o formato novo
+// (minutos inteiros) quanto o antigo (horas em decimal, de versões
+// anteriores) — sempre arredondado, pra nunca gerar dízima.
+function folgaMinutosConsumidos(folga){
+  if(!folga) return 0;
+  if(folga.minutosConvertidos!=null) return Math.round(Number(folga.minutosConvertidos)||0);
+  return Math.round((Number(folga.horasConvertidas)||0)*60);
+}
+function extraMinutosConsumidos(x){
+  if(x.minutos!=null) return Math.round(Number(x.minutos)||0);
+  return Math.round((Number(x.horas)||0)*60);
+}
+async function calcSaldoHoraExtra(uid){
+  const [records, extras] = await Promise.all([fetchRecords(uid), fetchExtrasPagos(uid)]);
+  let totalExtraMins = 0;
+  Object.keys(records).forEach(k=>{ totalExtraMins += Math.round(calcExtraMinsDoRegistro(records[k], k)); });
+  let usadoMins = 0;
+  Object.keys(records).forEach(k=>{ usadoMins += folgaMinutosConsumidos(records[k].folga); });
+  extras.forEach(x=>{ usadoMins += extraMinutosConsumidos(x); });
+  return { saldoMins: Math.round(totalExtraMins - usadoMins), totalExtraMins, usadoMins, records, extras };
+}
+
+// --- banco de horas extras: abono, folga, pagamento em dinheiro ---
+async function renderSaldoExtra(){
+  const label = document.getElementById('saldoExtraLabel');
+  const wrap = document.getElementById('historicoAjustesWrap');
+  label.textContent = 'Calculando saldo…';
+  wrap.innerHTML = '';
+  const { saldoMins, records, extras } = await calcSaldoHoraExtra(currentDetailUid);
+  label.innerHTML = `Saldo disponível: <b>${formatMinutes(Math.max(0,saldoMins))}</b>` + (saldoMins<0 ? ` <span style="color:var(--stamp-red);">(negativo: ${formatMinutes(-saldoMins)})</span>` : '');
+
+  const itens = [];
+  Object.keys(records).filter(k=>records[k].abono).forEach(k=>{
+    itens.push({data:k, tipo:'Abono', motivo:records[k].abono.motivo||'', onDelete: async ()=>{
+      if(!confirm('Remover este abono? O dia volta a ficar em branco.')) return;
+      delete records[k];
+      const ok = await writeUserAppdata(currentDetailUid, 'ponto-records', JSON.stringify(records));
+      if(ok){ showToast('Abono removido.'); await Promise.all([renderMonth(), renderSaldoExtra()]); }else showToast('Não foi possível remover.');
+    }});
+  });
+  Object.keys(records).filter(k=>records[k].folga).forEach(k=>{
+    const mins = folgaMinutosConsumidos(records[k].folga);
+    itens.push({data:k, tipo:`Folga (${formatMinutes(mins)})`, motivo:records[k].folga.motivo||'', onDelete: async ()=>{
+      if(!confirm('Remover esta folga? As horas voltam pro saldo, e o dia volta a ficar em branco.')) return;
+      delete records[k];
+      const ok = await writeUserAppdata(currentDetailUid, 'ponto-records', JSON.stringify(records));
+      if(ok){ showToast('Folga removida.'); await Promise.all([renderMonth(), renderSaldoExtra()]); }else showToast('Não foi possível remover.');
+    }});
+  });
+  extras.forEach(x=>{
+    const mins = extraMinutosConsumidos(x);
+    itens.push({data:x.quando ? x.quando.slice(0,10) : '', tipo:`Pago em dinheiro (${formatMinutes(mins)}, ${formatBRL(Number(x.valor)||0)})`, motivo:x.motivo||'', onDelete: async ()=>{
+      if(!confirm('Remover este pagamento? As horas voltam pro saldo.')) return;
+      const novaLista = extras.filter(y=>y.id!==x.id);
+      const ok = await writeUserAppdata(currentDetailUid, 'ponto-extras-pagos', JSON.stringify(novaLista));
+      if(ok){ showToast('Pagamento removido.'); await renderSaldoExtra(); }else showToast('Não foi possível remover.');
+    }});
+  });
+  itens.sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  if(itens.length===0){
+    wrap.innerHTML = '<p style="color:var(--muted);">Nenhum abono, folga ou pagamento registrado ainda.</p>';
+    return;
+  }
+  wrap.innerHTML = '<p style="font-weight:bold; margin-bottom:6px;">Histórico:</p>' + itens.map((it,i)=>
+    `<div style="border-bottom:1px solid var(--line); padding:6px 0; display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+      <div>
+        <div><b>${esc((it.data||'').split('-').reverse().join('/'))}</b> · ${esc(it.tipo)}</div>
+        ${it.motivo ? `<div style="color:var(--muted);">Motivo: ${esc(it.motivo)}</div>` : ''}
+      </div>
+      <button class="btn small outline" data-ajuste-idx="${i}" style="flex-shrink:0;" title="Remover">✕</button>
+    </div>`
+  ).join('');
+  wrap.querySelectorAll('[data-ajuste-idx]').forEach(btn=>{
+    btn.addEventListener('click', ()=> itens[Number(btn.dataset.ajusteIdx)].onDelete());
+  });
+}
+function formatBRL(n){ return (Number(n)||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
+
+// --- ajuste manual de horários (o admin edita direto, sem solicitação) ---
+function toggleAjusteFaltaFields(){
+  const falta = document.getElementById('ajusteFalta').checked;
+  document.getElementById('ajusteHorariosFields').style.display = falta ? 'none' : 'block';
+}
+async function openAjusteManualModal(dateKey){
+  document.getElementById('ajusteData').value = dateKey || '';
+  document.getElementById('ajusteMotivo').value = '';
+  document.getElementById('ajusteFalta').checked = false;
+  document.getElementById('ajusteEntrada').value = '';
+  document.getElementById('ajusteAlmocoSaida').value = '';
+  document.getElementById('ajusteAlmocoVolta').value = '';
+  document.getElementById('ajusteSaida').value = '';
+  document.getElementById('ajusteAvisoEspecial').style.display = 'none';
+  if(dateKey){
+    const records = await fetchRecords(currentDetailUid);
+    const rec = records[dateKey];
+    if(rec){
+      if(rec.falta) document.getElementById('ajusteFalta').checked = true;
+      if(rec.entrada) document.getElementById('ajusteEntrada').value = rec.entrada.slice(0,5);
+      if(rec.almocoSaida) document.getElementById('ajusteAlmocoSaida').value = rec.almocoSaida.slice(0,5);
+      if(rec.almocoVolta) document.getElementById('ajusteAlmocoVolta').value = rec.almocoVolta.slice(0,5);
+      if(rec.saida) document.getElementById('ajusteSaida').value = rec.saida.slice(0,5);
+      const aviso = document.getElementById('ajusteAvisoEspecial');
+      if(rec.folga){
+        aviso.textContent = `Este dia está marcado como FOLGA (motivo: ${rec.folga.motivo||'—'}). Preenchendo os horários e salvando, a folga é desfeita e as horas usadas voltam pro saldo.`;
+        aviso.style.display = 'block';
+      }else if(rec.abono){
+        aviso.textContent = `Este dia está marcado como ABONO (motivo: ${rec.abono.motivo||'—'}). Preenchendo os horários e salvando, o abono é desfeito.`;
+        aviso.style.display = 'block';
+      }
+    }
+  }
+  toggleAjusteFaltaFields();
+  document.getElementById('ajusteManualOverlay').classList.add('show');
+}
+async function saveAjusteManual(){
+  const dateKey = document.getElementById('ajusteData').value;
+  const falta = document.getElementById('ajusteFalta').checked;
+  const motivo = document.getElementById('ajusteMotivo').value.trim();
+  if(!dateKey){ showToast('Escolha uma data.'); return; }
+  const records = await fetchRecords(currentDetailUid);
+  const anterior = records[dateKey];
+  const eraFolgaOuAbono = !!(anterior && (anterior.folga || anterior.abono));
+  if(falta){
+    records[dateKey] = { entrada:null, almocoSaida:null, almocoVolta:null, saida:null, falta:true };
+  }else{
+    const vals = {
+      entrada: document.getElementById('ajusteEntrada').value,
+      almocoSaida: document.getElementById('ajusteAlmocoSaida').value,
+      almocoVolta: document.getElementById('ajusteAlmocoVolta').value,
+      saida: document.getElementById('ajusteSaida').value,
+    };
+    const rec = { falta:false };
+    ['entrada','almocoSaida','almocoVolta','saida'].forEach(t=>{ rec[t] = vals[t] ? vals[t]+':00' : null; });
+    records[dateKey] = rec;
+  }
+  if(motivo) records[dateKey].motivoAjusteAdmin = motivo;
+  const ok = await writeUserAppdata(currentDetailUid, 'ponto-records', JSON.stringify(records));
+  if(ok){
+    showToast(eraFolgaOuAbono ? 'Horários ajustados — folga/abono desfeito(a).' : 'Horários ajustados.');
+    document.getElementById('ajusteManualOverlay').classList.remove('show');
+    await Promise.all([renderMonth(), renderSaldoExtra()]);
+  }else showToast('Não foi possível salvar.');
+}
+
+// Tira uma folga ou abono de um dia específico (o dia volta a ficar em
+// branco, e as horas usadas na folga voltam pro saldo automaticamente,
+// já que o saldo é sempre recalculado a partir dos registros atuais).
+async function removerFolgaOuAbono(dateKey){
+  const records = await fetchRecords(currentDetailUid);
+  const rec = records[dateKey];
+  if(!rec || (!rec.folga && !rec.abono)) return;
+  const tipo = rec.folga ? 'folga' : 'abono';
+  if(!confirm(`Tirar a ${tipo} do dia ${dateKey.split('-').reverse().join('/')}? O dia volta a ficar em branco.`)) return;
+  delete records[dateKey];
+  const ok = await writeUserAppdata(currentDetailUid, 'ponto-records', JSON.stringify(records));
+  if(ok){
+    showToast(`${tipo==='folga'?'Folga':'Abono'} removido(a).`);
+    await Promise.all([renderMonth(), renderSaldoExtra()]);
+  }else showToast('Não foi possível remover.');
+}
+
+function openAbonoModal(){
+  const e = employees.find(x=>x.uid===currentDetailUid);
+  document.getElementById('abonoData').value = '';
+  document.getElementById('abonoMotivo').value = '';
+  document.getElementById('abonoValorSelect').value = '';
+  document.getElementById('abonoValorRow').style.display = e && e.tipoPagamento==='diarista' ? 'block' : 'none';
+  document.getElementById('abonoOverlay').classList.add('show');
+}
+async function saveAbono(){
+  const data = document.getElementById('abonoData').value;
+  const motivo = document.getElementById('abonoMotivo').value.trim();
+  const valorTier = document.getElementById('abonoValorSelect').value;
+  if(!data){ showToast('Escolha uma data.'); return; }
+  if(!motivo){ showToast('Informe o motivo, pra referência futura.'); return; }
+  const e = employees.find(x=>x.uid===currentDetailUid);
+  const records = await fetchRecords(currentDetailUid);
+  const existente = records[data];
+  if(existente && (existente.entrada || existente.falta || existente.folga)){
+    if(!confirm('Esse dia já tem batida, falta ou folga registrada. Substituir por um abono?')) return;
+  }
+  const abono = { motivo, criadoEm: new Date().toISOString() };
+  if(e && e.tipoPagamento==='diarista' && valorTier){
+    abono.valorDia = Number((e.diariaValores && e.diariaValores[valorTier]) || 0);
+  }
+  records[data] = { entrada:null, almocoSaida:null, almocoVolta:null, saida:null, falta:false, abono };
+  const ok = await writeUserAppdata(currentDetailUid, 'ponto-records', JSON.stringify(records));
+  if(ok){
+    showToast('Abono registrado.');
+    document.getElementById('abonoOverlay').classList.remove('show');
+    await Promise.all([renderMonth(), renderSaldoExtra()]);
+  }else showToast('Não foi possível salvar.');
+}
+
+function openFolgaModal(){
+  const e = employees.find(x=>x.uid===currentDetailUid);
+  document.getElementById('folgaData').value = '';
+  document.getElementById('folgaHorasH').value = '';
+  document.getElementById('folgaHorasM').value = '';
+  document.getElementById('folgaMotivo').value = '';
+  document.getElementById('folgaValorSelect').value = '';
+  document.getElementById('folgaValorRow').style.display = e && e.tipoPagamento==='diarista' ? 'block' : 'none';
+  document.getElementById('folgaOverlay').classList.add('show');
+}
+async function saveFolga(){
+  const data = document.getElementById('folgaData').value;
+  const h = Math.max(0, Math.floor(Number(document.getElementById('folgaHorasH').value) || 0));
+  const m = Math.max(0, Math.min(59, Math.floor(Number(document.getElementById('folgaHorasM').value) || 0)));
+  const minutosConvertidos = h*60 + m;
+  const motivo = document.getElementById('folgaMotivo').value.trim();
+  const valorTier = document.getElementById('folgaValorSelect').value;
+  if(!data){ showToast('Escolha uma data.'); return; }
+  if(minutosConvertidos<=0){ showToast('Informe quantas horas/minutos do saldo serão usados.'); return; }
+  if(!motivo){ showToast('Informe o motivo, pra referência futura.'); return; }
+  const { saldoMins, records } = await calcSaldoHoraExtra(currentDetailUid);
+  if(minutosConvertidos > saldoMins){
+    if(!confirm(`O saldo disponível é de ${formatMinutes(Math.max(0,saldoMins))}, menor que ${formatMinutes(minutosConvertidos)} pedidos. Continuar mesmo assim (o saldo ficará negativo)?`)) return;
+  }
+  const existente = records[data];
+  if(existente && (existente.entrada || existente.falta || existente.abono)){
+    if(!confirm('Esse dia já tem batida, falta ou abono registrado. Substituir por uma folga?')) return;
+  }
+  const e = employees.find(x=>x.uid===currentDetailUid);
+  const folga = { motivo, minutosConvertidos, criadoEm: new Date().toISOString() };
+  if(e && e.tipoPagamento==='diarista' && valorTier){
+    folga.valorDia = Number((e.diariaValores && e.diariaValores[valorTier]) || 0);
+  }
+  records[data] = { entrada:null, almocoSaida:null, almocoVolta:null, saida:null, falta:false, folga };
+  const ok = await writeUserAppdata(currentDetailUid, 'ponto-records', JSON.stringify(records));
+  if(ok){
+    showToast('Folga registrada.');
+    document.getElementById('folgaOverlay').classList.remove('show');
+    await Promise.all([renderMonth(), renderSaldoExtra()]);
+  }else showToast('Não foi possível salvar.');
+}
+
+function openDinheiroModal(){
+  document.getElementById('dinheiroHorasH').value = '';
+  document.getElementById('dinheiroHorasM').value = '';
+  document.getElementById('dinheiroValor').value = '';
+  document.getElementById('dinheiroMotivo').value = '';
+  document.getElementById('dinheiroMes').value = new Date().toISOString().slice(0,7);
+  document.getElementById('dinheiroOverlay').classList.add('show');
+}
+async function saveDinheiro(){
+  const h = Math.max(0, Math.floor(Number(document.getElementById('dinheiroHorasH').value) || 0));
+  const m = Math.max(0, Math.min(59, Math.floor(Number(document.getElementById('dinheiroHorasM').value) || 0)));
+  const minutos = h*60 + m;
+  const valor = Number(document.getElementById('dinheiroValor').value);
+  const mes = document.getElementById('dinheiroMes').value;
+  const motivo = document.getElementById('dinheiroMotivo').value.trim();
+  if(minutos<=0){ showToast('Informe quantas horas/minutos do saldo serão pagos.'); return; }
+  if(!mes){ showToast('Escolha a qual mês isso se refere.'); return; }
+  if(!motivo){ showToast('Informe o motivo, pra referência futura.'); return; }
+  const { saldoMins, extras } = await calcSaldoHoraExtra(currentDetailUid);
+  if(minutos > saldoMins){
+    if(!confirm(`O saldo disponível é de ${formatMinutes(Math.max(0,saldoMins))}, menor que ${formatMinutes(minutos)} pedidos. Continuar mesmo assim (o saldo ficará negativo)?`)) return;
+  }
+  extras.push({ id: 'x'+Date.now(), mes, minutos, valor: valor||0, motivo, quando: new Date().toISOString() });
+  const ok = await writeUserAppdata(currentDetailUid, 'ponto-extras-pagos', JSON.stringify(extras));
+  if(ok){
+    showToast('Pagamento registrado.');
+    document.getElementById('dinheiroOverlay').classList.remove('show');
+    await renderSaldoExtra();
+  }else showToast('Não foi possível salvar.');
+}
+async function renderMonth(){
+  document.getElementById('monthLabel').textContent = monthLabelOf(viewMonth);
+  const wrap = document.getElementById('monthTableWrap');
+  wrap.innerHTML = 'Carregando…';
+  const records = await fetchRecords(currentDetailUid);
+  const dias = Object.keys(records).filter(k=>k.startsWith(viewMonth)).sort();
+  if(dias.length===0){ wrap.innerHTML = '<p>Sem batidas neste mês.</p>'; return; }
+  let totalMins = 0;
+  const linhas = dias.map(dateKey=>{
+    const rec = records[dateKey];
+    let mins = 0, texto='';
+    if(rec.falta){ texto = 'FALTA'; }
+    else if(rec.abono){ texto = `ABONO${rec.abono.motivo?' — '+esc(rec.abono.motivo):''}`; }
+    else if(rec.folga){ texto = `FOLGA (${formatMinutes(folgaMinutosConsumidos(rec.folga))})${rec.folga.motivo?' — '+esc(rec.folga.motivo):''}`; }
+    else if(rec.diarista){
+      const e=timeToMinutes(rec.entrada), s=timeToMinutes(rec.saida);
+      if(e!==null && s!==null){ mins = Math.max(0,s-e); texto = formatMinutes(mins); }
+    }else{
+      const e=timeToMinutes(rec.entrada), as=timeToMinutes(rec.almocoSaida), av=timeToMinutes(rec.almocoVolta), s=timeToMinutes(rec.saida);
+      if(e!==null&&as!==null) mins += (as-e);
+      if(av!==null&&s!==null) mins += (s-av);
+      texto = mins>0 ? formatMinutes(mins) : '(parcial)';
+    }
+    totalMins += mins;
+    const locLinks = TIPOS.filter(t=>rec[t+'Loc']).map(t=>{
+      const l = rec[t+'Loc'];
+      return `<a href="https://www.google.com/maps?q=${l.lat},${l.lng}" target="_blank" rel="noopener">${LABELS[t]}📍</a>`;
+    }).join(' ');
+    return `<tr>
+      <td>${dateKey.split('-').reverse().join('/')}${rec.pendingRequest?' ⏳':''}</td>
+      <td>${rec.entrada||'—'}</td>
+      <td>${rec.almocoSaida||(rec.diarista?'—(diarista)':'—')}</td>
+      <td>${rec.almocoVolta||(rec.diarista?'—(diarista)':'—')}</td>
+      <td>${rec.saida||'—'}</td>
+      <td>${texto}</td>
+      <td>${locLinks||'—'}</td>
+      <td>
+        <div style="display:flex; gap:4px;">
+          <button class="btn small outline" data-ajustar-dia="${dateKey}" title="Ajustar manualmente">✎</button>
+          ${(rec.folga||rec.abono) ? `<button class="btn small outline" data-remover-dia="${dateKey}" title="Tirar folga/abono">✕</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<p><strong>Total do mês:</strong> ${formatMinutes(totalMins)}</p>
+    <div style="overflow-x:auto;"><table><thead><tr><th>Data</th><th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th><th>Total</th><th>Local</th><th>Ações</th></tr></thead>
+    <tbody>${linhas}</tbody></table></div>`;
+  wrap.querySelectorAll('[data-ajustar-dia]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openAjusteManualModal(btn.dataset.ajustarDia));
+  });
+  wrap.querySelectorAll('[data-remover-dia]').forEach(btn=>{
+    btn.addEventListener('click', ()=> removerFolgaOuAbono(btn.dataset.removerDia));
+  });
+}
+
+// --- demitir / readmitir ---
+async function setEmployeeFields(uid, fieldsObj){
+  const token = await authToken();
+  const keys = Object.keys(fieldsObj);
+  const mask = keys.map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+  const res = await fetch(`${FIRESTORE_REST_BASE}/employees/${uid}?${mask}`, {
+    method:'PATCH',
+    headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ fields: objToFirestoreFields(fieldsObj) })
+  });
+  return res.ok;
+}
+async function demitir(){
+  if(!confirm('Demitir esta pessoa? Ela perde o acesso pra bater ponto imediatamente. O histórico de batidas fica guardado por mais 3 meses e depois é apagado automaticamente.')) return;
+  const ok = await setEmployeeFields(currentDetailUid, { status:'demitido', demitidoEm: new Date().toISOString() });
+  if(ok){ showToast('Funcionário demitido.'); await loadEmployees(); openDetail(currentDetailUid); }
+  else showToast('Não foi possível salvar.');
+}
+async function readmitir(){
+  const ok = await setEmployeeFields(currentDetailUid, { status:'ativo', demitidoEm:null });
+  if(ok){ showToast('Funcionário readmitido.'); await loadEmployees(); openDetail(currentDetailUid); }
+  else showToast('Não foi possível salvar.');
+}
+
+// --- configurar pagamento / diária ---
+function openPayConfig(){
+  const e = employees.find(x=>x.uid===currentDetailUid);
+  const tipo = e.tipoPagamento === 'mensalista' ? 'clt' : (e.tipoPagamento || 'estagiario'); // 'mensalista' era o nome antigo do CLT
+  document.getElementById('tipoPagamentoSelect').value = tipo;
+  document.getElementById('salarioMensal').value = e.salario || '';
+  const dv = e.diariaValores || {};
+  document.getElementById('valor4h').value = dv['4']||dv[4]||0;
+  document.getElementById('valor6h').value = dv['6']||dv[6]||0;
+  document.getElementById('valor8h').value = dv['8']||dv[8]||0;
+  document.getElementById('vaValorDia').value = e.va || '';
+  document.getElementById('vaFormaDinheiro').checked = (e.vaForma === 'dinheiro');
+  document.getElementById('vtAtivoCheck').checked = !!e.vtAtivo;
+  document.getElementById('vtValorDia').value = e.vtValorDia || '';
+  document.getElementById('vtPercentual').value = (e.vtPercentual===undefined || e.vtPercentual===null) ? '' : e.vtPercentual;
+  document.getElementById('vtFormaDinheiro').checked = (e.vtForma === 'dinheiro');
+  toggleTipoPagamentoFields();
+  document.getElementById('payConfigOverlay').classList.add('show');
+}
+function toggleTipoPagamentoFields(){
+  const tipo = document.getElementById('tipoPagamentoSelect').value;
+  document.getElementById('diaristaFields').style.display = tipo==='diarista' ? 'block' : 'none';
+  document.getElementById('salarioFields').style.display = tipo==='diarista' ? 'none' : 'block';
+  document.getElementById('cltHint').style.display = tipo==='clt' ? 'block' : 'none';
+}
+function toggleVTFields(){
+  document.getElementById('vtFields').style.display = document.getElementById('vtAtivoCheck').checked ? 'block' : 'none';
+}
+async function savePayConfig(){
+  const tipo = document.getElementById('tipoPagamentoSelect').value;
+  const vtAtivo = document.getElementById('vtAtivoCheck').checked;
+  const fields = {
+    tipoPagamento: tipo,
+    va: Number(document.getElementById('vaValorDia').value) || 0,
+    vaForma: document.getElementById('vaFormaDinheiro').checked ? 'dinheiro' : 'cartao',
+    vtAtivo,
+    vtValorDia: vtAtivo ? (Number(document.getElementById('vtValorDia').value) || 0) : 0,
+    vtPercentual: vtAtivo ? (Number(document.getElementById('vtPercentual').value) || 0) : 0,
+    vtForma: document.getElementById('vtFormaDinheiro').checked ? 'dinheiro' : 'cartao',
+  };
+  if(tipo === 'diarista'){
+    fields.diariaValores = {
+      '4': Number(document.getElementById('valor4h').value)||0,
+      '6': Number(document.getElementById('valor6h').value)||0,
+      '8': Number(document.getElementById('valor8h').value)||0
+    };
+    fields.salario = 0;
+  }else{
+    fields.salario = Number(document.getElementById('salarioMensal').value) || 0;
+  }
+  const ok = await setEmployeeFields(currentDetailUid, fields);
+  if(ok){
+    showToast('Configuração salva.');
+    document.getElementById('payConfigOverlay').classList.remove('show');
+    await loadEmployees(); openDetail(currentDetailUid);
+  }else showToast('Não foi possível salvar.');
+}
+
+// --- login do ADM (conta separada, só e-mail/senha) ---
+async function onLogin(){
+  const email = document.getElementById('adminEmail').value.trim();
+  const senha = document.getElementById('adminPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if(!email || !senha){ errEl.textContent = 'Preencha e-mail e senha.'; return; }
+  try{
+    await auth.signInWithEmailAndPassword(email, senha);
+  }catch(e){
+    errEl.textContent = e.message || 'Erro ao entrar.';
+  }
+}
+function onLogout(){ auth.signOut(); }
+
+async function runDiagnostico(){
+  const out = document.getElementById('diagResult');
+  out.textContent = 'Testando...';
+  const uid = auth.currentUser ? auth.currentUser.uid : null;
+  const token = await authToken();
+  const linhas = [];
+  linhas.push('UID desta conta: ' + uid);
+  linhas.push('Projeto: ' + firebaseConfig.projectId);
+  linhas.push('');
+
+  // 1) Ler o PRÓPRIO documento em admins/{uid} — não depende de isAdmin(),
+  // só confirma se a conta em si consegue falar com o Firestore.
+  try{
+    const r1 = await fetch(`${FIRESTORE_REST_BASE}/admins/${uid}`, { headers:{ Authorization:`Bearer ${token}` } });
+    const t1 = await r1.text();
+    linhas.push(`1) GET /admins/${uid} -> HTTP ${r1.status}`);
+    linhas.push(t1.slice(0, 300));
+  }catch(e){
+    linhas.push('1) erro de rede: ' + e.message);
+  }
+  linhas.push('');
+
+  // 2) Listar a coleção employees (é o pedido que estava falhando).
+  try{
+    const r2 = await fetch(`${FIRESTORE_REST_BASE}/employees`, { headers:{ Authorization:`Bearer ${token}` } });
+    const t2 = await r2.text();
+    linhas.push(`2) GET /employees (lista) -> HTTP ${r2.status}`);
+    linhas.push(t2.slice(0, 300));
+  }catch(e){
+    linhas.push('2) erro de rede: ' + e.message);
+  }
+
+  linhas.push('');
+
+  // 3) Ler UM funcionário específico direto pelo UID dele (não a lista
+  // inteira) — isola se o problema é só no "listar" ou em tudo.
+  try{
+    const r3 = await fetch(`${FIRESTORE_REST_BASE}/employees/AkHK7r6dTxPNAZiScTWt9Jd647H3`, { headers:{ Authorization:`Bearer ${token}` } });
+    const t3 = await r3.text();
+    linhas.push(`3) GET /employees/AkHK7r6dTxPNAZiScTWt9Jd647H3 (doc único) -> HTTP ${r3.status}`);
+    linhas.push(t3.slice(0, 300));
+  }catch(e){
+    linhas.push('3) erro de rede: ' + e.message);
+  }
+
+  linhas.push('');
+
+  // 4) Testa se o ADM consegue GRAVAR em users/{uid}/appdata/ponto-records
+  // de outro funcionário — é exatamente essa gravação que acontece ao
+  // aprovar uma solicitação. Pra não arriscar os dados reais, ele lê o
+  // valor atual e grava o MESMO valor de volta, sem mudar nada.
+  try{
+    const testUid = 'AkHK7r6dTxPNAZiScTWt9Jd647H3';
+    const getR = await fetch(`${FIRESTORE_REST_BASE}/users/${testUid}/appdata/ponto-records`, { headers:{ Authorization:`Bearer ${token}` } });
+    if(getR.status === 404){
+      linhas.push('4) esse funcionário ainda não tem ponto-records — pulei o teste de escrita.');
+    }else if(!getR.ok){
+      linhas.push(`4) não consegui nem LER ponto-records desse funcionário pra testar -> HTTP ${getR.status}`);
+    }else{
+      const curData = await getR.json();
+      const curVal = curData.fields && curData.fields.value ? curData.fields.value.stringValue : '{}';
+      const w = await fetch(`${FIRESTORE_REST_BASE}/users/${testUid}/appdata/ponto-records`, {
+        method:'PATCH',
+        headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({ fields:{ value:{ stringValue: curVal }, updatedAt: curData.fields.updatedAt || { timestampValue:new Date().toISOString() } } })
+      });
+      const wt = await w.text();
+      linhas.push(`4) PATCH /users/${testUid}/appdata/ponto-records (grava o mesmo valor de volta, nada muda) -> HTTP ${w.status}`);
+      linhas.push(wt.slice(0, 300));
+      if(!w.ok) linhas.push('   ^ HTTP diferente de 200 aqui = as regras do Firestore não deixam o ADM escrever no ponto-records de outros funcionários. É por isso que aprovar não muda o horário.');
+    }
+  }catch(e){
+    linhas.push('4) erro de rede: ' + e.message);
+  }
+
+  out.textContent = linhas.join('\n');
+}
+on('diagBtn','click', runDiagnostico);
+
+let solicitacoesPollTimer = null;
+auth.onAuthStateChanged(async (user)=>{
+  if(user){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('appArea').classList.remove('hidden');
+    document.getElementById('adminEmailLabel').textContent = user.email;
+    document.getElementById('adminUidLabel').textContent = 'UID: ' + user.uid;
+    document.getElementById('employeesTableWrap').innerHTML = 'Carregando…';
+    if(window.Notification && Notification.permission === 'default'){
+      Notification.requestPermission();
+    }
+    await loadEmployees();
+    await loadSolicitacoes();
+    if(solicitacoesPollTimer) clearInterval(solicitacoesPollTimer);
+    // Enquanto a aba do painel estiver aberta, confere a cada 30s se
+    // chegou solicitação nova. Sem um servidor por trás, não dá pra
+    // avisar com o site fechado — isso aqui é o mais próximo possível
+    // de uma notificação num site estático.
+    solicitacoesPollTimer = setInterval(loadSolicitacoes, 30000);
+  }else{
+    document.getElementById('appArea').classList.add('hidden');
+    document.getElementById('loginCard').classList.remove('hidden');
+    if(solicitacoesPollTimer){ clearInterval(solicitacoesPollTimer); solicitacoesPollTimer = null; }
+    document.title = 'Painel ADM';
+  }
+});
+
+on('loginBtn','click', onLogin);
+on('menuBtn','click', ()=>{
+  document.getElementById('drawerAccountEmail').textContent = auth.currentUser ? auth.currentUser.email : '—';
+  document.getElementById('drawerOverlay').classList.add('show');
+});
+on('drawerCloseBtn','click', ()=>document.getElementById('drawerOverlay').classList.remove('show'));
+on('drawerOverlay','click', (e)=>{ if(e.target.id==='drawerOverlay') document.getElementById('drawerOverlay').classList.remove('show'); });
+on('menuLogoutBtn','click', ()=>{ document.getElementById('drawerOverlay').classList.remove('show'); onLogout(); });
+function scrollToCard(id){
+  document.getElementById('drawerOverlay').classList.remove('show');
+  const el = document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+on('menuGoSolicitacoes','click', ()=>scrollToCard('solicitacoesCard'));
+on('menuGoCreate','click', ()=>scrollToCard('createCard'));
+on('menuGoList','click', ()=>scrollToCard('listCard'));
+on('newTipoId','change', toggleNewIdType);
+on('gerarSenhaBtn','click', ()=>{ document.getElementById('newSenha').value = gerarSenhaAleatoria(); });
+on('criarFuncionarioBtn','click', criarFuncionario);
+on('recuperarUidBtn','click', recuperarUidExistente);
+on('backToListBtn','click', backToList);
+on('demitirBtn','click', demitir);
+on('readmitirBtn','click', readmitir);
+on('configPagamentoBtn','click', openPayConfig);
+on('payConfigCancel','click', ()=>document.getElementById('payConfigOverlay').classList.remove('show'));
+
+on('ajusteManualBtn','click', ()=>openAjusteManualModal(null));
+on('ajusteManualCancel','click', ()=>document.getElementById('ajusteManualOverlay').classList.remove('show'));
+on('ajusteManualSave','click', saveAjusteManual);
+on('ajusteFalta','change', toggleAjusteFaltaFields);
+
+on('marcarAbonoBtn','click', openAbonoModal);
+on('abonoCancel','click', ()=>document.getElementById('abonoOverlay').classList.remove('show'));
+on('abonoSave','click', saveAbono);
+
+on('converterFolgaBtn','click', openFolgaModal);
+on('folgaCancel','click', ()=>document.getElementById('folgaOverlay').classList.remove('show'));
+on('folgaSave','click', saveFolga);
+
+on('pagarDinheiroBtn','click', openDinheiroModal);
+on('dinheiroCancel','click', ()=>document.getElementById('dinheiroOverlay').classList.remove('show'));
+on('dinheiroSave','click', saveDinheiro);
+on('payConfigSave','click', savePayConfig);
+on('tipoPagamentoSelect','change', toggleTipoPagamentoFields);
+on('vtAtivoCheck','change', toggleVTFields);
+on('prevMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,-1); renderMonth(); });
+on('nextMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,1); renderMonth(); });
+</script>
+</body>
+</html>

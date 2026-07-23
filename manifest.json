@@ -1,7 +1,7 @@
 {
-  "name": "Pagamentos - Controle de Ponto",
-  "short_name": "Pagamentos",
-  "start_url": "./index.html",
+  "name": "Controle de Ponto - Márcio Josoel do Nascimento Gonçalves",
+  "short_name": "Controle de Ponto",
+  "start_url": "./controle_de_ponto.html",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#111111",
