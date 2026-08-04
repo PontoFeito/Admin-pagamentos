@@ -51,21 +51,6 @@ tbody tr:hover{background:var(--accent-tint);}
 .modal{background:#fff; border-radius:18px; padding:24px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-md);}
 .receipt-row{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px;}
 .receipt-row.total{font-weight:700; border-bottom:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:10px;}
-
-.only-print{display:none;}
-@media print{
-  body *{ visibility:hidden; }
-  .only-print.active, .only-print.active *{ visibility:visible; }
-  .only-print.active{ display:block !important; position:absolute; left:0; top:0; width:100%; padding:20px; }
-  body{padding:0; background:#fff;}
-  #folhaTabela{width:100%; border-collapse:collapse; font-size:12px;}
-  #folhaTabela th, #folhaTabela td{border:1px solid #999; padding:6px 8px; text-align:left;}
-  #folhaTitulo, #holeriteTitulo{font-family:'Oswald',sans-serif; text-transform:uppercase; margin-bottom:4px;}
-  .folha-rodape{font-size:11px; color:#777; margin-top:16px;}
-  #holeriteConteudoImpressao .receipt-row{font-size:13px;}
-  .assinatura-linha{margin-top:56px; border-top:1px solid #333; width:320px; padding-top:6px; font-size:12px;}
-  .assinatura-data{margin-top:26px; font-size:12px;}
-}
 </style>
 </head>
 <body>
@@ -110,21 +95,6 @@ tbody tr:hover{background:var(--accent-tint);}
   </div>
 </div>
 
-<!-- folha de pagamento pra impressão — fica escondida na tela, só aparece no print -->
-<div id="folhaImpressao" class="only-print">
-  <h2 id="folhaTitulo">Folha de Pagamento</h2>
-  <table id="folhaTabela"></table>
-  <p id="folhaTotalGeral"></p>
-  <p class="folha-rodape">Gerado em <span id="folhaData"></span> — Controle de Ponto</p>
-</div>
-
-<!-- holerite individual pra impressão -->
-<div id="holeriteImpressao" class="only-print">
-  <h2 id="holeriteTitulo">Holerite</h2>
-  <div id="holeriteConteudoImpressao"></div>
-  <p class="folha-rodape">Gerado em <span id="holeriteData"></span> — Controle de Ponto</p>
-</div>
-
 <!-- modal de detalhe -->
 <div class="modal-overlay" id="detalheOverlay">
   <div class="modal">
@@ -161,6 +131,9 @@ let employeesData = [];
 let viewMonth = new Date().toISOString().slice(0,7);
 
 function pad(n){ return String(n).padStart(2,'0'); }
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function on(id, ev, fn){ const el=document.getElementById(id); if(el) el.addEventListener(ev, fn); }
 async function authToken(){ return auth.currentUser ? await auth.currentUser.getIdToken() : null; }
 
@@ -259,6 +232,15 @@ function calcDescontoVT(salarioBase, valorMesVT, percentual){
 function diasTrabalhadosNoMes(records, mk){
   return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].entrada && !records[k].falta).length;
 }
+// Dias de abono e de folga (hora extra convertida em folga) contam pro
+// salário proporcional, mas não geram Vale Alimentação/Transporte — mesma
+// regra usada no app do funcionário e no painel do ADM.
+function diasAbonoNoMes(records, mk){
+  return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].abono).length;
+}
+function diasFolgaNoMes(records, mk){
+  return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].folga).length;
+}
 function diasUteisNoMes(mk){
   const [y,m] = mk.split('-').map(Number);
   const diasNoMes = new Date(y, m, 0).getDate();
@@ -285,32 +267,44 @@ function getRemuneracao(employee){
   };
 }
 function computeDiaristaBreakdown(records, mk, employee){
-  const dias = diasTrabalhadosNoMes(records, mk);
+  const diasFisicos = diasTrabalhadosNoMes(records, mk);
+  const diasAbono = diasAbonoNoMes(records, mk);
+  const diasFolga = diasFolgaNoMes(records, mk);
   const faltas = faltasNoMes(records, mk);
   let totalMes = 0;
   Object.keys(records).filter(k=>monthKeyOf(k)===mk).forEach(k=>{
-    const t = calcTotal(records[k]);
+    const rec = records[k];
+    // Abono/folga de diarista: valor escolhido manualmente pelo ADM (não
+    // tem horário batido pra calcular sozinho).
+    if(rec.abono){ totalMes += Number(rec.abono.valorDia || 0); return; }
+    if(rec.folga){ totalMes += Number(rec.folga.valorDia || 0); return; }
+    const t = calcTotal(rec);
     if(t && !t.falta && t.complete) totalMes += calcDiaria(t.mins, employee).valor;
   });
-  return { diarista:true, dias, faltas, totalMes };
+  return { diarista:true, dias: diasFisicos + diasAbono + diasFolga, diasFisicos, diasAbono, diasFolga, faltas, totalMes };
 }
 function computePayrollBreakdown(records, mk, employee){
   if(employee.tipoPagamento === 'diarista') return computeDiaristaBreakdown(records, mk, employee);
   const rem = getRemuneracao(employee);
   const diasUteis = diasUteisNoMes(mk);
-  const dias = diasTrabalhadosNoMes(records, mk);
+  const diasFisicos = diasTrabalhadosNoMes(records, mk);
+  const diasAbono = diasAbonoNoMes(records, mk);
+  const diasFolga = diasFolgaNoMes(records, mk);
+  const diasPagos = diasFisicos + diasAbono + diasFolga; // usado só pra proporção do salário
   const faltas = faltasNoMes(records, mk);
   const diaValor = diasUteis ? rem.salario / diasUteis : 0;
-  let salarioMes = diaValor * dias;
-  if(dias >= diasUteis) salarioMes = rem.salario;
-  const vaMes = rem.va * dias;
-  const out = { diasUteis, dias, faltas, salarioMes, vaMes, vaForma: rem.vaForma, isCLT: rem.isCLT, diarista:false };
+  let salarioMes = diaValor * diasPagos;
+  if(diasPagos >= diasUteis) salarioMes = rem.salario;
+  // Vale Alimentação/Transporte só nos dias fisicamente trabalhados —
+  // abono e folga não geram esses benefícios.
+  const vaMes = rem.va * diasFisicos;
+  const out = { diasUteis, dias: diasFisicos, diasFisicos, diasAbono, diasFolga, diasPagos, faltas, salarioMes, vaMes, vaForma: rem.vaForma, isCLT: rem.isCLT, diarista:false };
   // Vale Transporte pode descontar tanto de CLT quanto de estagiário —
   // segue o mesmo cálculo do app do funcionário. O desconto legal é
   // opcional (0% = não desconta nada); o valor do vale aparece sempre.
   out.vtForma = rem.vtForma;
   if(rem.vtAtivo){
-    const vtMes = rem.vtValorDia * dias;
+    const vtMes = rem.vtValorDia * diasFisicos;
     out.vtMes = vtMes;
     out.descontoVT = rem.vtPercentual>0 ? calcDescontoVT(salarioMes, vtMes, rem.vtPercentual) : 0;
   }else{
@@ -402,7 +396,9 @@ function montarLinhasHolerite(employee, breakdown){
   if(!breakdown) return '<p>Sem dados neste mês.</p>';
   if(breakdown.diarista){
     return `
-      <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.dias}</span></div>
+      <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.diasFisicos}</span></div>
+      ${breakdown.diasAbono>0 ? `<div class="receipt-row"><span>Dias de abono</span><span>${breakdown.diasAbono}</span></div>` : ''}
+      ${breakdown.diasFolga>0 ? `<div class="receipt-row"><span>Dias de folga (hora extra)</span><span>${breakdown.diasFolga}</span></div>` : ''}
       <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
       <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
     `;
@@ -410,6 +406,8 @@ function montarLinhasHolerite(employee, breakdown){
   return `
     <div class="receipt-row"><span>Dias úteis no mês</span><span>${breakdown.diasUteis}</span></div>
     <div class="receipt-row"><span>Dias trabalhados</span><span>${breakdown.dias}</span></div>
+    ${breakdown.diasAbono>0 ? `<div class="receipt-row"><span>Dias de abono</span><span>${breakdown.diasAbono}</span></div>` : ''}
+    ${breakdown.diasFolga>0 ? `<div class="receipt-row"><span>Dias de folga (hora extra)</span><span>${breakdown.diasFolga}</span></div>` : ''}
     <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
     <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa (proporcional)':'Salário bruto (proporcional)'}</span><span>${formatBRL(breakdown.salarioMes)}</span></div>
     ${breakdown.isCLT ? `<div class="receipt-row"><span>INSS (desconto)</span><span>-${formatBRL(breakdown.inss)}</span></div>` : ''}
@@ -433,59 +431,90 @@ function abrirDetalhe(uid){
 }
 
 // --- impressão: holerite individual e folha do mês inteira ---
+// Antes isso tentava imprimir escondendo o resto da página com CSS de
+// @media print — não funcionava de forma confiável no Chrome Android.
+// Agora abre uma janela nova só com o conteúdo a imprimir (mesma técnica
+// que já funciona no app principal de controle de ponto) e chama o print
+// nessa janela — muito mais confiável em navegador mobile.
 function imprimirHolerite(){
   const item = employeesData.find(x=>x.employee.uid===currentDetalheUid);
   if(!item) return;
   const { employee, breakdown } = item;
-  document.getElementById('holeriteTitulo').textContent = `Holerite — ${employee.nome||'—'}`;
-  document.getElementById('holeriteConteudoImpressao').innerHTML = `
-    <p><strong>Funcionário:</strong> ${employee.nome||'—'}</p>
-    <p><strong>Identificação:</strong> ${employee.identifier||'—'}</p>
-    <p><strong>Referência:</strong> ${monthLabelOf(viewMonth)}</p>
-    <hr style="margin:12px 0; border:none; border-top:1px solid #ccc;">
-    ${montarLinhasHolerite(employee, breakdown)}
-    <div class="assinatura-linha">Assinatura do funcionário</div>
-    <div class="assinatura-data">Data: ____ / ____ / ________</div>
-  `;
-  document.getElementById('holeriteData').textContent = new Date().toLocaleDateString('pt-BR');
-  const el = document.getElementById('holeriteImpressao');
-  el.classList.add('active');
-  window.print();
-  setTimeout(()=>el.classList.remove('active'), 500);
+  const win = window.open('', '_blank');
+  if(!win){ showAvisoPopup(); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Holerite — ${esc(employee.nome||'—')}</title>
+    <style>
+      @page{ size:A4; margin:18mm; }
+      body{ font-family:Arial, Helvetica, sans-serif; color:#111; margin:0; }
+      h1{ font-size:19px; margin:0 0 12px; text-transform:uppercase; }
+      p{ font-size:13px; margin:4px 0; }
+      .receipt-row{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #ccc; font-size:13px; }
+      .receipt-row.total{ font-weight:bold; border-bottom:none; border-top:2px solid #111; margin-top:6px; padding-top:10px; }
+      .assinatura-linha{ margin-top:56px; border-top:1px solid #333; width:320px; padding-top:6px; font-size:12px; }
+      .assinatura-data{ margin-top:26px; font-size:12px; }
+      .rodape{ font-size:11px; color:#777; margin-top:20px; }
+    </style></head><body>
+      <h1>Holerite — ${esc(employee.nome||'—')}</h1>
+      <p><strong>Identificação:</strong> ${esc(employee.identifier||'—')}</p>
+      <p><strong>Referência:</strong> ${esc(monthLabelOf(viewMonth))}</p>
+      <hr style="margin:12px 0; border:none; border-top:1px solid #ccc;">
+      ${montarLinhasHolerite(employee, breakdown)}
+      <div class="assinatura-linha">Assinatura do funcionário</div>
+      <div class="assinatura-data">Data: ____ / ____ / ________</div>
+      <p class="rodape">Gerado em ${esc(new Date().toLocaleString('pt-BR'))} — Controle de Ponto</p>
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ try{ win.print(); }catch(e){ /* usuário pode imprimir manualmente pela janela aberta */ } }, 300);
 }
 function imprimirFolha(){
-  document.getElementById('folhaTitulo').textContent = `Folha de Pagamento — Referência: ${monthLabelOf(viewMonth)}`;
   let totalGeral = 0;
   const linhas = employeesData.map(({employee, breakdown})=>{
     if(!breakdown) return '';
     totalGeral += breakdown.totalMes;
     if(breakdown.diarista){
-      return `<tr><td>${employee.nome||'—'}</td><td>${labelTipoPagamento(employee.tipoPagamento)}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>—</td><td>—</td><td>—</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td><td style="min-width:120px;"></td></tr>`;
+      return `<tr><td>${esc(employee.nome||'—')}</td><td>${esc(labelTipoPagamento(employee.tipoPagamento))}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>—</td><td>—</td><td>—</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td><td></td></tr>`;
     }
     return `<tr>
-      <td>${employee.nome||'—'}</td>
-      <td>${labelTipoPagamento(employee.tipoPagamento)}</td>
+      <td>${esc(employee.nome||'—')}</td>
+      <td>${esc(labelTipoPagamento(employee.tipoPagamento))}</td>
       <td>${breakdown.dias}/${breakdown.diasUteis}</td>
       <td>${breakdown.faltas}</td>
       <td>${formatBRL(breakdown.salarioMes)}</td>
       <td>${breakdown.isCLT ? formatBRL(breakdown.inss) : '—'}</td>
       <td>${formatBRL(breakdown.vaMes)}${breakdown.vtMes>0 ? ' + ' + formatBRL(breakdown.vtMes) + ' VT' : ''}</td>
       <td><strong>${formatBRL(breakdown.totalMes)}</strong></td>
-      <td style="min-width:120px;"></td>
+      <td></td>
     </tr>`;
   }).join('');
-  document.getElementById('folhaTabela').innerHTML = `
-    <thead><tr>
-      <th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>Bruto</th><th>INSS</th><th>VA/VT</th><th>Total</th><th>Assinatura</th>
-    </tr></thead>
-    <tbody>${linhas}</tbody>
-  `;
-  document.getElementById('folhaTotalGeral').innerHTML = `<strong>Total geral da folha: ${formatBRL(totalGeral)}</strong>`;
-  document.getElementById('folhaData').textContent = new Date().toLocaleDateString('pt-BR');
-  const el = document.getElementById('folhaImpressao');
-  el.classList.add('active');
-  window.print();
-  setTimeout(()=>el.classList.remove('active'), 500);
+  const win = window.open('', '_blank');
+  if(!win){ showAvisoPopup(); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Folha de Pagamento</title>
+    <style>
+      @page{ size:A4 landscape; margin:14mm; }
+      body{ font-family:Arial, Helvetica, sans-serif; color:#111; margin:0; }
+      h1{ font-size:18px; margin:0 0 2px; text-transform:uppercase; }
+      .sub{ font-size:12px; color:#555; margin-bottom:16px; }
+      table{ width:100%; border-collapse:collapse; font-size:11.5px; }
+      th, td{ border:1px solid #999; padding:6px 8px; text-align:left; }
+      th{ background:#111; color:#fff; }
+      tr:nth-child(even){ background:#f5f5f5; }
+      .total{ margin-top:14px; font-weight:bold; font-size:14px; }
+    </style></head><body>
+      <h1>Folha de Pagamento</h1>
+      <div class="sub">Referência: ${esc(monthLabelOf(viewMonth))} · Gerado em ${esc(new Date().toLocaleString('pt-BR'))}</div>
+      <table>
+        <thead><tr><th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>Bruto</th><th>INSS</th><th>VA/VT</th><th>Total</th><th>Assinatura</th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      <p class="total">Total geral da folha: ${formatBRL(totalGeral)}</p>
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ try{ win.print(); }catch(e){ /* usuário pode imprimir manualmente pela janela aberta */ } }, 300);
+}
+function showAvisoPopup(){
+  alert('Permita pop-ups/janelas para este site no navegador pra poder imprimir.');
 }
 
 async function onLogin(){
