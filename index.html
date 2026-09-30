@@ -210,7 +210,9 @@ function firestoreFieldsToObj(fields){
 
 async function getIndex(indexDocId){
   const token = await authToken();
-  const res = await fetch(`${FIRESTORE_REST_BASE}/admin_index/${indexDocId}`, { headers:{ Authorization:`Bearer ${token}` } });
+  let res;
+  try{ res = await fetch(`${FIRESTORE_REST_BASE}/admin_index/${indexDocId}`, { headers:{ Authorization:`Bearer ${token}` } }); }
+  catch(e){ return null; }
   if(res.status === 404) return { ids: [] };
   if(!res.ok) return null;
   const data = await res.json();
@@ -307,7 +309,7 @@ function computeDiaristaBreakdown(records, mk, employee){
     const t = calcTotal(rec, k, employee);
     if(t && !t.falta && t.complete) totalMes += calcDiaria(t.mins, employee).valor;
   });
-  return { diarista:true, dias: diasFisicos + diasAbono + diasFolga, diasFisicos, diasAbono, diasFolga, faltas, totalMes };
+  return { diarista:true, dias: diasFisicos, diasFisicos, diasAbono, diasFolga, faltas, totalMes };
 }
 function computeMensalBreakdown(records, mk, employee){
   const rem = getRemuneracao(employee);
@@ -382,23 +384,28 @@ async function loadTudo(){
   wrap.innerHTML = 'Carregando…';
   const idx = await getIndex('employees');
   if(!idx){
-    wrap.innerHTML = '<p class="error-text">Sem permissão de administrador nesta conta.</p>';
+    wrap.innerHTML = '<p class="error-text">Não foi possível carregar a lista de funcionários (sem permissão de administrador nesta conta, ou sem internet). Tente recarregar.</p>';
     return;
   }
   const token = await authToken();
   const resultados = await Promise.all(idx.ids.map(async (uid)=>{
-    const res = await fetch(`${FIRESTORE_REST_BASE}/employees/${uid}`, { headers:{ Authorization:`Bearer ${token}` } });
-    if(!res.ok) return null;
-    const doc = await res.json();
-    const employee = { uid, ...firestoreFieldsToObj(doc.fields) };
-    const [records, extrasPagos] = await Promise.all([fetchRecords(uid), fetchExtrasPagos(uid)]);
-    // null = a leitura falhou (não confundir com "sem registros"): não calcula
-    // pra não mostrar um total errado como se estivesse certo.
-    if(records===null || extrasPagos===null) return { employee, breakdown:null, erro:true };
-    const breakdown = computePayrollBreakdown(records, viewMonth, employee, extrasPagos);
-    return { employee, breakdown };
+    // Falha em UM funcionário não pode derrubar a folha nem sumir com ele da
+    // lista: ele aparece com "erro ao carregar" e o total é marcado como parcial.
+    const falhou = { employee:{ uid, nome:'(não carregou)' }, breakdown:null, erro:true };
+    try{
+      const res = await fetch(`${FIRESTORE_REST_BASE}/employees/${uid}`, { headers:{ Authorization:`Bearer ${token}` } });
+      if(!res.ok) return falhou;
+      const doc = await res.json();
+      const employee = { uid, ...firestoreFieldsToObj(doc.fields) };
+      const [records, extrasPagos] = await Promise.all([fetchRecords(uid), fetchExtrasPagos(uid)]);
+      // null = a leitura falhou (não confundir com "sem registros"): não calcula
+      // pra não mostrar um total errado como se estivesse certo.
+      if(records===null || extrasPagos===null) return { employee, breakdown:null, erro:true };
+      const breakdown = computePayrollBreakdown(records, viewMonth, employee, extrasPagos);
+      return { employee, breakdown };
+    }catch(e){ return falhou; }
   }));
-  employeesData = resultados.filter(Boolean);
+  employeesData = resultados;
   renderTabela();
 }
 function renderTabela(){
@@ -537,8 +544,9 @@ const extraTxt = b => b.horas && b.horas.extraMesMins>0 ? formatMinutes(b.horas.
 const extraPagaTxt = b => b.extrasPagasValor>0 ? `${formatBRL(b.extrasPagasValor)} (${formatMinutes(b.extrasPagasMins)})` : '—';
 function imprimirFolha(){
   let totalGeral = 0;
+  const comErro = employeesData.filter(x=>x.erro).length;
   const linhas = employeesData.map(({employee, breakdown})=>{
-    if(!breakdown) return '';
+    if(!breakdown) return `<tr><td>${esc(employee.nome||'—')}</td><td colspan="10" style="color:#b00020; font-weight:bold;">não carregou — fora da soma</td></tr>`;
     totalGeral += breakdown.totalMes;
     if(breakdown.diarista){
       return `<tr><td>${esc(employee.nome||'—')}</td><td>${esc(labelTipoPagamento(employee.tipoPagamento))}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>${extraTxt(breakdown)}</td><td>—</td><td>—</td><td>—</td><td>${extraPagaTxt(breakdown)}</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td><td></td></tr>`;
@@ -578,6 +586,7 @@ function imprimirFolha(){
         <tbody>${linhas}</tbody>
       </table>
       <p class="total">Total geral da folha: ${formatBRL(totalGeral)}</p>
+      ${comErro>0 ? `<p style="color:#b00020; font-weight:bold;">ATENÇÃO: total PARCIAL — ${comErro} funcionário(s) não carregaram e ficaram de fora da soma.</p>` : ''}
     </body></html>`);
   win.document.close();
   win.focus();
