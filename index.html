@@ -3,13 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pagamentos">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap">
 <title>Pagamentos · Controle de Ponto</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111111">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+
 :root{
   --bg:#F5F6F4; --ink:#16191C; --muted:#6B7178; --line:#E3E4E0;
   --confirm-green:#2E7D5B; --stamp-red:#B4423F;
@@ -29,21 +36,21 @@ h1{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.5
 input, select{width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:var(--radius-sm); font-family:'Inter',sans-serif; font-size:14px; transition:border-color .15s, box-shadow .15s;}
 input:focus, select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint);}
 .btn{border:none; background:var(--accent); color:#fff; border-radius:var(--radius-sm); padding:12px 18px; font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; font-size:14px; box-shadow:var(--shadow-sm); transition:background .15s, transform .1s, box-shadow .15s;}
-.btn:hover{background:var(--accent-dark); transform:translateY(-1px); box-shadow:var(--shadow-md);}
+@media (hover:hover){ .btn:hover{background:var(--accent-dark); transform:translateY(-1px); box-shadow:var(--shadow-md);} }
 .btn.outline{background:transparent; color:var(--accent); border:1.5px solid var(--accent); box-shadow:none;}
-.btn.outline:hover{background:var(--accent-tint); box-shadow:none; transform:none;}
+@media (hover:hover){ .btn.outline:hover{background:var(--accent-tint); box-shadow:none; transform:none;} }
 .btn.small{padding:7px 12px; font-size:11px; border-radius:7px;}
 .error-text{color:var(--stamp-red); font-size:13px; margin-top:8px; min-height:16px;}
 table{width:100%; border-collapse:collapse; font-size:13px;}
 th, td{border-bottom:1px solid var(--line); padding:10px 8px; text-align:left;}
 th{font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--muted);}
 tbody tr{transition:background .12s;}
-tbody tr:hover{background:var(--accent-tint);}
+@media (hover:hover){ tbody tr:hover{background:var(--accent-tint);} }
 .tag{display:inline-block; padding:3px 10px; border-radius:20px; font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; background:var(--accent-tint); color:var(--accent-dark);}
 .hidden{display:none !important;}
 .month-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
 .month-nav button{border:1.5px solid var(--line); background:#fff; border-radius:var(--radius-sm); padding:6px 16px; cursor:pointer; font-family:'Oswald',sans-serif; transition:background .12s, border-color .12s;}
-.month-nav button:hover{background:var(--accent-tint); border-color:var(--accent);}
+@media (hover:hover){ .month-nav button:hover{background:var(--accent-tint); border-color:var(--accent);} }
 .month-label{font-family:'Space Mono',monospace; font-size:15px; text-transform:capitalize;}
 .total-geral{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; margin-top:6px; color:var(--accent-dark);}
 .modal-overlay{display:none; position:fixed; inset:0; background:rgba(15,20,18,.55); z-index:50; align-items:center; justify-content:center; padding:16px;}
@@ -51,6 +58,47 @@ tbody tr:hover{background:var(--accent-tint);}
 .modal{background:#fff; border-radius:18px; padding:24px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-md);}
 .receipt-row{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px;}
 .receipt-row.total{font-weight:700; border-bottom:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:10px;}
+
+
+/* ================= iPhone / toque =================
+   O que travava o uso no iOS Safari:
+   - campo com fonte menor que 16px faz o iOS dar zoom ao tocar e a tela fica deslocada;
+   - modal com 90vh passa da área visível (a barra do Safari cobre os botões);
+   - botões menores que 44px, tabela larga demais e :hover que "gruda" depois do toque;
+   - a página de trás rolava junto com o modal aberto. */
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
+html.modal-aberto, html.modal-aberto body{overflow:hidden;}
+body{min-height:100vh; min-height:100dvh; -webkit-tap-highlight-color:transparent;}
+button, select, label, summary, [role="button"]{touch-action:manipulation;}
+input, select, textarea{font-size:16px !important; min-width:0; max-width:100%;}
+.modal-overlay{overscroll-behavior:contain;}
+.modal{max-height:100% !important; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;}
+/* Fechar/Imprimir sempre à vista no holerite (o conteúdo rola por baixo) */
+.modal > div:last-child{position:sticky; bottom:-24px; background:#fff; padding:12px 0 14px;}
+.receipt-row span:last-child{white-space:nowrap; margin-left:12px;}
+.table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+@media (max-width:640px){
+  body{padding:16px 12px 40px;}
+  .card{padding:16px 14px;}
+  .folha-table thead{display:none;}
+  .folha-table, .folha-table tbody, .folha-table tr, .folha-table td{display:block; width:100%;}
+  .folha-table tr{border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:10px; background:#fff; box-shadow:var(--shadow-sm);}
+  .folha-table td{border:none; padding:5px 0; display:flex; justify-content:space-between; align-items:center; gap:12px;}
+  .folha-table td::before{content:attr(data-label); font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--muted); flex-shrink:0;}
+  .folha-table td.col-nome{font-family:'Oswald',sans-serif; font-size:17px; padding-bottom:6px; margin-bottom:4px; border-bottom:1px dashed var(--line);}
+  .folha-table td.col-nome::before{content:none;}
+  .folha-table td.col-acao{padding-top:8px;}
+  .folha-table td.col-acao::before{content:none;}
+  .folha-table td.col-acao .btn{width:100%;}
+  .folha-table tbody tr:hover{background:#fff;}
+}
+@media (pointer:coarse){
+  .btn{min-height:46px;}
+  .btn.small{min-height:44px; padding:10px 14px; font-size:12px;}
+  .month-nav button{min-width:56px; min-height:44px; font-size:18px;}
+  input:not([type="checkbox"]):not([type="radio"]), select{min-height:46px;}
+}
+
 </style>
 </head>
 <body>
@@ -63,7 +111,7 @@ tbody tr:hover{background:var(--accent-tint);}
     <p style="font-size:13px; color:var(--muted);">Acesso restrito ao administrador (mesma conta do painel do ADM).</p>
     <div class="field-row">
       <label for="loginEmail">E-mail</label>
-      <input type="email" id="loginEmail" autocomplete="username">
+      <input type="email" id="loginEmail" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
     </div>
     <div class="field-row">
       <label for="loginSenha">Senha</label>
@@ -109,6 +157,7 @@ tbody tr:hover{background:var(--accent-tint);}
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="ponto-core.js"></script>
 <script>
 // Mesmo projeto Firebase dos outros dois sites — mesmo banco de dados.
 const firebaseConfig = {
@@ -126,9 +175,9 @@ const pagApp = firebase.initializeApp(firebaseConfig, 'PagamentosApp');
 const auth = pagApp.auth();
 const FIRESTORE_REST_BASE = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents`;
 
-const LIMITE_NORMAL_MIN = 6*60;
 let employeesData = [];
-let viewMonth = new Date().toISOString().slice(0,7);
+// Mês atual pela data LOCAL (toISOString() é UTC e vira o mês antes da hora).
+let viewMonth = PontoCore.currentMonthKey();
 
 function pad(n){ return String(n).padStart(2,'0'); }
 function esc(s){
@@ -167,21 +216,30 @@ async function getIndex(indexDocId){
   const data = await res.json();
   return { ids: firestoreFieldsToObj(data.fields).ids || [] };
 }
-async function fetchRecords(uid){
+// Lê um documento de dados do funcionário (users/{uid}/appdata/{key}, guardado
+// como JSON dentro de "value"). 404 = ainda não existe (vazio de verdade);
+// qualquer outra falha devolve null pra NÃO tratar erro de rede/permissão como
+// "zero hora extra" — isso faria a folha sair errada sem avisar.
+async function fetchAppdata(uid, key, vazio){
   const token = await authToken();
-  const res = await fetch(`${FIRESTORE_REST_BASE}/users/${uid}/appdata/ponto-records`, { headers:{ Authorization:`Bearer ${token}` } });
-  if(res.status === 404) return {};
-  if(!res.ok) return {};
+  let res;
+  try{ res = await fetch(`${FIRESTORE_REST_BASE}/users/${uid}/appdata/${key}`, { headers:{ Authorization:`Bearer ${token}` } }); }
+  catch(e){ return null; }
+  if(res.status === 404) return vazio;
+  if(!res.ok) return null;
   const data = await res.json();
   const raw = data.fields && data.fields.value && data.fields.value.stringValue;
-  try{ return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; }
+  try{ return raw ? JSON.parse(raw) : vazio; }catch(e){ return null; }
 }
+const fetchRecords = uid => fetchAppdata(uid, 'ponto-records', {});
+const fetchExtrasPagos = uid => fetchAppdata(uid, 'ponto-extras-pagos', []);
 
-// --- as mesmas contas do app do funcionário, só de leitura ---
-function timeToMinutes(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
-function formatMinutes(mins){ const h=Math.floor(mins/60); const mm=Math.round(mins%60); return `${h}h${pad(mm)}`; }
+// --- as mesmas contas do app do funcionário e do painel do ADM ---
+// Horas e hora extra vêm de ponto-core.js (regra única) — não recalcule aqui.
+const timeToMinutes = PontoCore.timeToMinutes;
+const formatMinutes = PontoCore.formatMinutes;
 function formatBRL(v){ return (v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
-function monthKeyOf(dateKey){ return dateKey.slice(0,7); }
+const monthKeyOf = PontoCore.monthKeyOf;
 
 function calcDiaria(mins, employee){
   const v = (employee && employee.diariaValores) || {};
@@ -192,22 +250,7 @@ function calcDiaria(mins, employee){
   const base = Number(v['4']||v[4]||0);
   return { tier:null, valor: base ? (base/4)*horas : 0 };
 }
-function calcTotal(rec){
-  if(!rec) return null;
-  if(rec.falta) return {falta:true, mins:0, complete:true, extraMins:0};
-  if(rec.diarista){
-    const e = timeToMinutes(rec.entrada), s = timeToMinutes(rec.saida);
-    if(e===null || s===null) return null;
-    return { mins: Math.max(0, s-e), complete:true, extraMins:0, diarista:true };
-  }
-  const e = timeToMinutes(rec.entrada), as = timeToMinutes(rec.almocoSaida), av = timeToMinutes(rec.almocoVolta), s = timeToMinutes(rec.saida);
-  let mins = 0, complete = true;
-  if(e!==null && as!==null){ mins += (as-e); } else complete = false;
-  if(av!==null && s!==null){ mins += (s-av); } else complete = false;
-  if(mins<=0 && !complete) return null;
-  const extraMins = mins > LIMITE_NORMAL_MIN ? mins - LIMITE_NORMAL_MIN : 0;
-  return { mins, complete, extraMins };
-}
+const calcTotal = (rec, key, employee) => PontoCore.calcDia(rec, key, employee);
 function calcINSS(salarioBase){
   const faixas = [
     {ate: 1621.00, aliq: 0.075}, {ate: 2902.84, aliq: 0.09},
@@ -229,31 +272,14 @@ function calcDescontoVT(salarioBase, valorMesVT, percentual){
   const limite = salarioBase * (percentual/100);
   return Math.round(Math.min(limite, valorMesVT) * 100) / 100;
 }
-function diasTrabalhadosNoMes(records, mk){
-  return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].entrada && !records[k].falta).length;
-}
+const diasTrabalhadosNoMes = PontoCore.diasTrabalhadosNoMes;
 // Dias de abono e de folga (hora extra convertida em folga) contam pro
 // salário proporcional, mas não geram Vale Alimentação/Transporte — mesma
 // regra usada no app do funcionário e no painel do ADM.
-function diasAbonoNoMes(records, mk){
-  return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].abono).length;
-}
-function diasFolgaNoMes(records, mk){
-  return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].folga).length;
-}
-function diasUteisNoMes(mk){
-  const [y,m] = mk.split('-').map(Number);
-  const diasNoMes = new Date(y, m, 0).getDate();
-  let count = 0;
-  for(let d=1; d<=diasNoMes; d++){
-    const dow = new Date(y, m-1, d).getDay();
-    if(dow>=1 && dow<=5) count++;
-  }
-  return count;
-}
-function faltasNoMes(records, mk){
-  return Object.keys(records).filter(k=>monthKeyOf(k)===mk && records[k] && records[k].falta).length;
-}
+const diasAbonoNoMes = PontoCore.diasAbonoNoMes;
+const diasFolgaNoMes = PontoCore.diasFolgaNoMes;
+const diasUteisNoMes = PontoCore.diasUteisNoMes;
+const faltasNoMes = PontoCore.faltasNoMes;
 function getRemuneracao(employee){
   return {
     salario: employee.salario||0,
@@ -278,13 +304,12 @@ function computeDiaristaBreakdown(records, mk, employee){
     // tem horário batido pra calcular sozinho).
     if(rec.abono){ totalMes += Number(rec.abono.valorDia || 0); return; }
     if(rec.folga){ totalMes += Number(rec.folga.valorDia || 0); return; }
-    const t = calcTotal(rec);
+    const t = calcTotal(rec, k, employee);
     if(t && !t.falta && t.complete) totalMes += calcDiaria(t.mins, employee).valor;
   });
   return { diarista:true, dias: diasFisicos + diasAbono + diasFolga, diasFisicos, diasAbono, diasFolga, faltas, totalMes };
 }
-function computePayrollBreakdown(records, mk, employee){
-  if(employee.tipoPagamento === 'diarista') return computeDiaristaBreakdown(records, mk, employee);
+function computeMensalBreakdown(records, mk, employee){
   const rem = getRemuneracao(employee);
   const diasUteis = diasUteisNoMes(mk);
   const diasFisicos = diasTrabalhadosNoMes(records, mk);
@@ -320,6 +345,22 @@ function computePayrollBreakdown(records, mk, employee){
   out.totalMes = out.salarioLiquido + vaMes + (rem.vtAtivo && rem.vtForma==='dinheiro' ? out.vtMes : 0);
   return out;
 }
+// Total do mês de um funcionário. Horas, hora extra e hora extra paga em
+// dinheiro vêm do núcleo compartilhado — o "Total a receber" precisa bater
+// com o "Total do mês (a receber)" que o funcionário vê no app dele, e lá a
+// hora extra paga em dinheiro faz parte do total.
+function computePayrollBreakdown(records, mk, employee, extrasPagos){
+  const out = employee.tipoPagamento === 'diarista'
+    ? computeDiaristaBreakdown(records, mk, employee)
+    : computeMensalBreakdown(records, mk, employee);
+  const horas = PontoCore.resumoHorasMes(records, mk, employee, extrasPagos);
+  out.horas = horas;
+  out.saldoExtraMins = PontoCore.saldoHoraExtra(records, extrasPagos, employee).saldoMins;
+  out.extrasPagasMins = horas.extrasPagasMins;
+  out.extrasPagasValor = horas.extrasPagasValor;
+  out.totalMes += horas.extrasPagasValor;
+  return out;
+}
 function labelForma(forma){
   return forma === 'dinheiro' ? '💵 Dinheiro' : '💳 Cartão benefício';
 }
@@ -333,11 +374,7 @@ function monthLabelOf(mk){
   const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   return `${meses[+m-1]} de ${y}`;
 }
-function shiftMonth(mk, delta){
-  let [y,m] = mk.split('-').map(Number);
-  m += delta; if(m<1){m=12;y-=1;} else if(m>12){m=1;y+=1;}
-  return `${y}-${pad(m)}`;
-}
+const shiftMonth = PontoCore.shiftMonth;
 
 async function loadTudo(){
   const wrap = document.getElementById('tableWrap');
@@ -354,8 +391,11 @@ async function loadTudo(){
     if(!res.ok) return null;
     const doc = await res.json();
     const employee = { uid, ...firestoreFieldsToObj(doc.fields) };
-    const records = await fetchRecords(uid);
-    const breakdown = computePayrollBreakdown(records, viewMonth, employee);
+    const [records, extrasPagos] = await Promise.all([fetchRecords(uid), fetchExtrasPagos(uid)]);
+    // null = a leitura falhou (não confundir com "sem registros"): não calcula
+    // pra não mostrar um total errado como se estivesse certo.
+    if(records===null || extrasPagos===null) return { employee, breakdown:null, erro:true };
+    const breakdown = computePayrollBreakdown(records, viewMonth, employee, extrasPagos);
     return { employee, breakdown };
   }));
   employeesData = resultados.filter(Boolean);
@@ -364,23 +404,25 @@ async function loadTudo(){
 function renderTabela(){
   const wrap = document.getElementById('tableWrap');
   if(employeesData.length===0){ wrap.innerHTML = '<p>Nenhum funcionário encontrado.</p>'; document.getElementById('totalGeral').textContent=''; return; }
-  let totalGeral = 0;
-  wrap.innerHTML = `<div style="overflow-x:auto;"><table><thead><tr>
-    <th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>Total a receber</th><th></th>
+  let totalGeral = 0, comErro = 0;
+  wrap.innerHTML = `<div class="table-scroll"><table class="folha-table"><thead><tr>
+    <th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>H. extra</th><th>Total a receber</th><th></th>
   </tr></thead><tbody>
-  ${employeesData.map(({employee, breakdown})=>{
+  ${employeesData.map(({employee, breakdown, erro})=>{
     totalGeral += breakdown ? breakdown.totalMes : 0;
+    if(erro) comErro++;
     return `<tr>
-      <td>${employee.nome||'—'}</td>
-      <td><span class="tag">${labelTipoPagamento(employee.tipoPagamento)}</span></td>
-      <td>${breakdown?breakdown.dias:'—'}</td>
-      <td>${breakdown?breakdown.faltas:'—'}</td>
-      <td><strong>${breakdown?formatBRL(breakdown.totalMes):'—'}</strong></td>
-      <td><button class="btn small outline" data-uid="${employee.uid}">Detalhe</button></td>
+      <td data-label="Nome" class="col-nome">${esc(employee.nome||'—')}</td>
+      <td data-label="Tipo"><span class="tag">${labelTipoPagamento(employee.tipoPagamento)}</span></td>
+      <td data-label="Dias">${breakdown?breakdown.dias:'—'}</td>
+      <td data-label="Faltas">${breakdown?breakdown.faltas:'—'}</td>
+      <td data-label="H. extra">${breakdown ? (breakdown.horas.extraMesMins>0 ? formatMinutes(breakdown.horas.extraMesMins) : '—') : '—'}</td>
+      <td data-label="Total a receber"><strong>${breakdown?formatBRL(breakdown.totalMes):(erro?'<span class="error-text">erro ao carregar</span>':'—')}</strong></td>
+      <td class="col-acao"><button class="btn small outline" data-uid="${esc(employee.uid)}">Detalhe</button></td>
     </tr>`;
   }).join('')}
   </tbody></table></div>`;
-  document.getElementById('totalGeral').textContent = `Total da folha do mês: ${formatBRL(totalGeral)}`;
+  document.getElementById('totalGeral').textContent = `Total da folha do mês: ${formatBRL(totalGeral)}` + (comErro ? ` (parcial — ${comErro} funcionário(s) não carregaram)` : '');
   wrap.querySelectorAll('button[data-uid]').forEach(btn=>{
     btn.addEventListener('click', ()=>abrirDetalhe(btn.getAttribute('data-uid')));
   });
@@ -392,6 +434,24 @@ function formaCheckboxes(forma){
   </div>`;
 }
 let currentDetalheUid = null;
+// Linhas de horas / hora extra — as mesmas do fechamento do mês do funcionário.
+function linhasHoras(breakdown){
+  const h = breakdown.horas;
+  return `
+    <div class="receipt-row"><span>Horas trabalhadas no mês</span><span>${formatMinutes(h.totalMesMins)}</span></div>
+    ${h.complementoMesMins>0 ? `<div class="receipt-row"><span>↳ inclui complemento de jornada</span><span>${formatMinutes(h.complementoMesMins)}</span></div>` : ''}
+    ${!breakdown.diarista && h.horasFaltantesMin>0 ? `<div class="receipt-row"><span>Horas faltantes no mês</span><span>${formatMinutes(h.horasFaltantesMin)}</span></div>` : ''}`;
+}
+function linhasExtra(breakdown){
+  return `
+    ${breakdown.extrasPagasValor>0 ? `<div class="receipt-row"><span>Hora extra paga em dinheiro (${formatMinutes(breakdown.extrasPagasMins)})</span><span>${formatBRL(breakdown.extrasPagasValor)}</span></div>` : ''}`;
+}
+function linhasExtraInfo(breakdown){
+  const h = breakdown.horas;
+  return `
+    ${h.extraMesMins>0 ? `<div class="receipt-row"><span>Hora extra gerada neste mês</span><span>${formatMinutes(h.extraMesMins)}</span></div>` : ''}
+    <div class="receipt-row"><span>Saldo de hora extra disponível</span><span>${formatMinutes(Math.max(0, breakdown.saldoExtraMins))}</span></div>`;
+}
 function montarLinhasHolerite(employee, breakdown){
   if(!breakdown) return '<p>Sem dados neste mês.</p>';
   if(breakdown.diarista){
@@ -400,7 +460,10 @@ function montarLinhasHolerite(employee, breakdown){
       ${breakdown.diasAbono>0 ? `<div class="receipt-row"><span>Dias de abono</span><span>${breakdown.diasAbono}</span></div>` : ''}
       ${breakdown.diasFolga>0 ? `<div class="receipt-row"><span>Dias de folga (hora extra)</span><span>${breakdown.diasFolga}</span></div>` : ''}
       <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
+      ${linhasHoras(breakdown)}
+      ${linhasExtra(breakdown)}
       <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
+      ${linhasExtraInfo(breakdown)}
     `;
   }
   return `
@@ -409,6 +472,7 @@ function montarLinhasHolerite(employee, breakdown){
     ${breakdown.diasAbono>0 ? `<div class="receipt-row"><span>Dias de abono</span><span>${breakdown.diasAbono}</span></div>` : ''}
     ${breakdown.diasFolga>0 ? `<div class="receipt-row"><span>Dias de folga (hora extra)</span><span>${breakdown.diasFolga}</span></div>` : ''}
     <div class="receipt-row"><span>Faltas</span><span>${breakdown.faltas}</span></div>
+    ${linhasHoras(breakdown)}
     <div class="receipt-row"><span>${employee.tipoPagamento==='estagiario'?'Bolsa (proporcional)':'Salário bruto (proporcional)'}</span><span>${formatBRL(breakdown.salarioMes)}</span></div>
     ${breakdown.isCLT ? `<div class="receipt-row"><span>INSS (desconto)</span><span>-${formatBRL(breakdown.inss)}</span></div>` : ''}
     ${breakdown.vtMes>0 ? `<div class="receipt-row"><span>Vale Transporte</span><span>${formatBRL(breakdown.vtMes)}</span></div>${formaCheckboxes(breakdown.vtForma)}` : ''}
@@ -417,7 +481,9 @@ function montarLinhasHolerite(employee, breakdown){
     ${breakdown.isCLT ? `<div class="receipt-row"><span>FGTS (depositado à parte)</span><span>${formatBRL(breakdown.fgts)}</span></div>` : ''}
     <div class="receipt-row"><span>Vale Alimentação</span><span>${formatBRL(breakdown.vaMes)}</span></div>
     ${formaCheckboxes(breakdown.vaForma)}
+    ${linhasExtra(breakdown)}
     <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
+    ${linhasExtraInfo(breakdown)}
   `;
 }
 function abrirDetalhe(uid){
@@ -467,22 +533,26 @@ function imprimirHolerite(){
   win.focus();
   setTimeout(()=>{ try{ win.print(); }catch(e){ /* usuário pode imprimir manualmente pela janela aberta */ } }, 300);
 }
+const extraTxt = b => b.horas && b.horas.extraMesMins>0 ? formatMinutes(b.horas.extraMesMins) : '—';
+const extraPagaTxt = b => b.extrasPagasValor>0 ? `${formatBRL(b.extrasPagasValor)} (${formatMinutes(b.extrasPagasMins)})` : '—';
 function imprimirFolha(){
   let totalGeral = 0;
   const linhas = employeesData.map(({employee, breakdown})=>{
     if(!breakdown) return '';
     totalGeral += breakdown.totalMes;
     if(breakdown.diarista){
-      return `<tr><td>${esc(employee.nome||'—')}</td><td>${esc(labelTipoPagamento(employee.tipoPagamento))}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>—</td><td>—</td><td>—</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td><td></td></tr>`;
+      return `<tr><td>${esc(employee.nome||'—')}</td><td>${esc(labelTipoPagamento(employee.tipoPagamento))}</td><td>${breakdown.dias}</td><td>${breakdown.faltas}</td><td>${extraTxt(breakdown)}</td><td>—</td><td>—</td><td>—</td><td>${extraPagaTxt(breakdown)}</td><td><strong>${formatBRL(breakdown.totalMes)}</strong></td><td></td></tr>`;
     }
     return `<tr>
       <td>${esc(employee.nome||'—')}</td>
       <td>${esc(labelTipoPagamento(employee.tipoPagamento))}</td>
       <td>${breakdown.dias}/${breakdown.diasUteis}</td>
       <td>${breakdown.faltas}</td>
+      <td>${extraTxt(breakdown)}</td>
       <td>${formatBRL(breakdown.salarioMes)}</td>
       <td>${breakdown.isCLT ? formatBRL(breakdown.inss) : '—'}</td>
       <td>${formatBRL(breakdown.vaMes)}${breakdown.vtMes>0 ? ' + ' + formatBRL(breakdown.vtMes) + ' VT' : ''}</td>
+      <td>${extraPagaTxt(breakdown)}</td>
       <td><strong>${formatBRL(breakdown.totalMes)}</strong></td>
       <td></td>
     </tr>`;
@@ -495,7 +565,7 @@ function imprimirFolha(){
       body{ font-family:Arial, Helvetica, sans-serif; color:#111; margin:0; }
       h1{ font-size:18px; margin:0 0 2px; text-transform:uppercase; }
       .sub{ font-size:12px; color:#555; margin-bottom:16px; }
-      table{ width:100%; border-collapse:collapse; font-size:11.5px; }
+      table{ width:100%; border-collapse:collapse; font-size:10.5px; }
       th, td{ border:1px solid #999; padding:6px 8px; text-align:left; }
       th{ background:#111; color:#fff; }
       tr:nth-child(even){ background:#f5f5f5; }
@@ -504,7 +574,7 @@ function imprimirFolha(){
       <h1>Folha de Pagamento</h1>
       <div class="sub">Referência: ${esc(monthLabelOf(viewMonth))} · Gerado em ${esc(new Date().toLocaleString('pt-BR'))}</div>
       <table>
-        <thead><tr><th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>Bruto</th><th>INSS</th><th>VA/VT</th><th>Total</th><th>Assinatura</th></tr></thead>
+        <thead><tr><th>Nome</th><th>Tipo</th><th>Dias</th><th>Faltas</th><th>H. extra</th><th>Bruto</th><th>INSS</th><th>VA/VT</th><th>Extra paga</th><th>Total</th><th>Assinatura</th></tr></thead>
         <tbody>${linhas}</tbody>
       </table>
       <p class="total">Total geral da folha: ${formatBRL(totalGeral)}</p>
@@ -547,6 +617,19 @@ on('logoutBtn','click', onLogout);
 on('prevMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,-1); loadTudo(); });
 on('nextMonthBtn','click', ()=>{ viewMonth = shiftMonth(viewMonth,1); loadTudo(); });
 on('detalheFechar','click', ()=>document.getElementById('detalheOverlay').classList.remove('show'));
+</script>
+<script>
+// Enquanto um modal/menu/tela cheia está aberto, trava a rolagem da página de
+// trás (no iPhone o fundo rolava junto e o modal "fugia" do dedo).
+(function(){
+  var SEL = '.modal-overlay.show, .drawer-overlay.show, .fullscreen-overlay.show';
+  function sync(){ document.documentElement.classList.toggle('modal-aberto', !!document.querySelector(SEL)); }
+  var mo = new MutationObserver(sync);
+  document.querySelectorAll('.modal-overlay, .drawer-overlay, .fullscreen-overlay').forEach(function(el){
+    mo.observe(el, { attributes:true, attributeFilter:['class'] });
+  });
+  sync();
+})();
 </script>
 </body>
 </html>
