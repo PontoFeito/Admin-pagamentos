@@ -58,6 +58,14 @@ tbody tr{transition:background .12s;}
 .modal{background:#fff; border-radius:18px; padding:24px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-md);}
 .receipt-row{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px;}
 .receipt-row.total{font-weight:700; border-bottom:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:10px;}
+.extrato{margin-top:16px; border-top:2px solid var(--ink); padding-top:8px;}
+.extrato-titulo{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.5px; font-size:14px; margin:10px 0 4px;}
+.receipt-row.sub{font-size:12px; color:var(--muted); padding-left:10px;}
+.receipt-row.sub span:first-child{overflow-wrap:anywhere;}
+.receipt-row.grupo{font-weight:700; border-bottom:1px solid var(--ink); padding-top:8px;}
+.receipt-row.conta{font-size:13.5px; font-weight:600;}
+.receipt-row small{font-size:11px; font-weight:400; color:var(--muted);}
+.receipt-row, .extrato-titulo{break-inside:avoid;}
 
 
 /* ================= iPhone / toque =================
@@ -358,6 +366,7 @@ function computePayrollBreakdown(records, mk, employee, extrasPagos){
   const horas = PontoCore.resumoHorasMes(records, mk, employee, extrasPagos);
   out.horas = horas;
   out.saldoExtraMins = PontoCore.saldoHoraExtra(records, extrasPagos, employee).saldoMins;
+  out.movimento = PontoCore.movimentoHoraExtra(records, extrasPagos, mk, employee);   // extrato do holerite
   out.extrasPagasMins = horas.extrasPagasMins;
   out.extrasPagasValor = horas.extrasPagasValor;
   out.totalMes += horas.extrasPagasValor;
@@ -459,6 +468,13 @@ function linhasExtraInfo(breakdown){
     ${h.extraMesMins>0 ? `<div class="receipt-row"><span>Hora extra gerada neste mês</span><span>${formatMinutes(h.extraMesMins)}</span></div>` : ''}
     <div class="receipt-row"><span>Saldo de hora extra disponível</span><span>${formatMinutes(Math.max(0, breakdown.saldoExtraMins))}</span></div>`;
 }
+// --- extrato da hora extra: o que gerou, como foi usada e a conta final ---
+// Para o funcionário enxergar que a hora extra dele foi usada (abono, saída
+// mais cedo, folga, pagamento em dinheiro) e quanto sobrou: gerado − usado = saldo.
+// A montagem fica em ponto-core.js — é a MESMA do "Exportar folha A4" do app do funcionário.
+function blocoExtratoHoraExtra(breakdown){
+  return PontoCore.htmlExtratoHoraExtra(breakdown.movimento, monthLabelOf(viewMonth));
+}
 function montarLinhasHolerite(employee, breakdown){
   if(!breakdown) return '<p>Sem dados neste mês.</p>';
   if(breakdown.diarista){
@@ -471,6 +487,7 @@ function montarLinhasHolerite(employee, breakdown){
       ${linhasExtra(breakdown)}
       <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
       ${linhasExtraInfo(breakdown)}
+      ${blocoExtratoHoraExtra(breakdown)}
     `;
   }
   return `
@@ -491,6 +508,7 @@ function montarLinhasHolerite(employee, breakdown){
     ${linhasExtra(breakdown)}
     <div class="receipt-row total"><span>Total a receber</span><span>${formatBRL(breakdown.totalMes)}</span></div>
     ${linhasExtraInfo(breakdown)}
+    ${blocoExtratoHoraExtra(breakdown)}
   `;
 }
 function abrirDetalhe(uid){
@@ -523,6 +541,7 @@ function imprimirHolerite(){
       p{ font-size:13px; margin:4px 0; }
       .receipt-row{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #ccc; font-size:13px; }
       .receipt-row.total{ font-weight:bold; border-bottom:none; border-top:2px solid #111; margin-top:6px; padding-top:10px; }
+      ${PontoCore.cssExtratoImpressao}
       .assinatura-linha{ margin-top:56px; border-top:1px solid #333; width:320px; padding-top:6px; font-size:12px; }
       .assinatura-data{ margin-top:26px; font-size:12px; }
       .rodape{ font-size:11px; color:#777; margin-top:20px; }
